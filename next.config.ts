@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
   output: "export",
   basePath,
   trailingSlash: true,
+  typescript: {
+    tsconfigPath: isGitHubPages ? "./tsconfig.pages.json" : "./tsconfig.json",
+  },
   images: {
     unoptimized: true,
   },
