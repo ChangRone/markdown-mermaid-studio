@@ -4,14 +4,14 @@
     "next-env.d.ts",
     "app/**/*.ts",
     "app/**/*.tsx",
+    "components/**/*.ts",
+    "components/**/*.tsx",
+    "lib/**/*.ts",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
-    "db",
-    "examples",
-    "build",
-    "drizzle.config.ts"
+    "tests"
   ]
 }

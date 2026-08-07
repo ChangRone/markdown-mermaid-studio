@@ -1,38 +1,55 @@
 # Markdown Mermaid Studio
 
-一個本機優先的 Markdown 與 Mermaid 文件工作台。可直接在瀏覽器開啟、匯入及下載 `.md`，並同步預覽文件與檢查 Mermaid 11 語法。
+本機優先的 Markdown／Mermaid 生產力工作台。可直接在瀏覽器管理多份文件、編輯、即時預覽、雙向定位、檢核、建立版本快照並輸出成果。
 
-**線上使用：** [GitHub Pages](https://changrone.github.io/markdown-mermaid-studio/) · [ChatGPT Site](https://markdown-mermaid-studio.wacerone.chatgpt.site)
+**線上使用：** [GitHub Pages](https://changrone.github.io/markdown-mermaid-studio/)
 
-## MVP 功能
+## v0.4 功能
 
-- Markdown 原始碼與即時預覽
-- `.md`／`.markdown`／`.txt` 匯入與 `.md` 下載
-- Mermaid 11.16.1 流程圖、循序圖、狀態圖、類別圖、ER 圖、甘特圖、心智圖及架構圖範本
-- Mermaid 語法檢核與錯誤定位
-- 文件結構健檢、標題層級與待辦清單建議
-- 一鍵複製 AI 完善提示
-- 瀏覽器本機自動儲存、淺色／深色模式及響應式介面
-- 可拖曳或使用鍵盤調整編輯區與預覽區寬度，並保存版面比例
+- `.md`／`.markdown`／`.mdown`／`.mkd`／`.txt` 匯入，統一下載為 UTF-8 `.md`
+- 多文件工作區、複製／刪除、最多 20 份本機版本快照與安全還原
+- 編輯、並排、預覽模式；可拖曳或用鍵盤調整欄寬並保存比例
+- Source ↔ Preview 雙向定位：來源游標定位預覽，點選預覽回到精確來源行
+- 文字搜尋、上一筆／下一筆、區分大小寫、逐筆與全部取代
+- CommonMark、GFM、frontmatter、註腳、數學公式與安全的外部連結預覽
+- Mermaid 11.16.1 即時渲染、精確錯誤行、29 種核心圖表範本與官方文件入口
+- 每張 Mermaid 圖可縮放、複製原始碼、下載 SVG 或 PNG
+- 文件結構、標題、圖片替代文字與 Mermaid 健檢
+- 規則修正前後比較、選擇套用、自動建立還原快照
+- 一鍵複製完整 AI 完善提示，不自動傳送文件
+- 淺色／深色模式、桌機／平板／手機響應式介面
+
+原始 HTML 預設不執行，Mermaid 使用 `securityLevel: strict`。文件、多文件工作區、偏好與快照只保存在目前瀏覽器，不需要登入、資料庫或付費 AI API。
+
+## 快捷操作
+
+- `Ctrl/Cmd + S`：下載目前 Markdown
+- `Ctrl/Cmd + F`：開啟搜尋與取代
+- 並排模式移動來源游標：定位預覽段落
+- 點選預覽標題、段落、清單、表格或圖表：回到來源行
+- 分隔線 `←`／`→`：調整欄寬；按住 `Shift` 每次調整 5%；雙擊恢復 50%
 
 ## 本機執行
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
-## 驗證
+## 完整驗證
 
 ```bash
-npm run lint
-npm run build
+npm test
 ```
+
+驗證包含 ESLint、純函式單元測試、全部 Mermaid 範本解析、雙向定位 source map、GitHub Pages build 與靜態資源 smoke test。
 
 ## GitHub Pages 部署
 
-推送到 `main` 後，GitHub Actions 會自動建立靜態版本並部署到
-`https://changrone.github.io/markdown-mermaid-studio/`。GitHub Pages 的來源需設為
-**GitHub Actions**。
+推送到 `main` 後，GitHub Actions 會依序執行 lint、單元測試、靜態 build、Pages smoke test，全部通過後才部署到：
 
-目前版本不會把文件內容傳送至伺服器或外部 AI。瀏覽器儲存只用於保存使用者目前的草稿、檔名、主題偏好與分割版面比例。
+`https://changrone.github.io/markdown-mermaid-studio/`
+
+依賴由 `package-lock.json` 鎖定並使用 `npm ci`。每月排程只更新目前 major 範圍內的相容版本；完整測試成功後才直接更新 `main`，不建立額外發布分支。
+
+詳細狀態與驗收標準請見 [PROJECT_STATUS.md](./PROJECT_STATUS.md)，版本變更請見 [CHANGELOG.md](./CHANGELOG.md)。
