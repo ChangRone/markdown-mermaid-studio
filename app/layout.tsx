@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-const publicBasePath = process.env.GITHUB_PAGES === "true" ? "/markdown-mermaid-studio" : "";
+const publicBasePath = process.env.GITHUB_ACTIONS === "true" ? "/markdown-mermaid-studio" : "";
 
 export const metadata: Metadata = {
   title: "Markdown Mermaid Studio",

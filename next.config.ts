@@ -1,20 +1,18 @@
 import type { NextConfig } from "next";
 
-const isGitHubPages = process.env.GITHUB_PAGES === "true";
+const isGitHubPages = process.env.GITHUB_ACTIONS === "true";
+const basePath = isGitHubPages ? "/markdown-mermaid-studio" : "";
 
 const nextConfig: NextConfig = {
-  // GitHub Pages only serves static files. Keep the existing vinext/Cloudflare
-  // build untouched, and opt into a static export in the Pages workflow.
-  ...(isGitHubPages
-    ? {
-        output: "export" as const,
-        basePath: "/markdown-mermaid-studio",
-        assetPrefix: "/markdown-mermaid-studio/",
-        trailingSlash: true,
-        images: { unoptimized: true },
-        typescript: { tsconfigPath: "tsconfig.pages.json" },
-      }
-    : {}),
+  output: "export",
+  basePath,
+  trailingSlash: true,
+  typescript: {
+    tsconfigPath: isGitHubPages ? "./tsconfig.pages.json" : "./tsconfig.json",
+  },
+  images: {
+    unoptimized: true,
+  },
 };
 
 export default nextConfig;
