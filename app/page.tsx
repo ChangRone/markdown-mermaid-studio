@@ -102,6 +102,24 @@ export default function Home() {
 
   const notify = useCallback((message: string) => setToast(message), []);
 
+  const resetDocumentNavigation = useCallback(() => {
+    setActiveSourceLine(undefined);
+    setCurrentMatch(0);
+    if (syncFrameRef.current) {
+      window.cancelAnimationFrame(syncFrameRef.current);
+      syncFrameRef.current = null;
+    }
+    window.requestAnimationFrame(() => {
+      const area = textareaRef.current;
+      if (area) {
+        area.setSelectionRange(0, 0);
+        area.scrollTop = 0;
+      }
+      const preview = previewPaneRef.current?.querySelector<HTMLElement>(".markdown-body");
+      if (preview) preview.scrollTop = 0;
+    });
+  }, []);
+
   useEffect(() => {
     const timer = window.setTimeout(() => {
       const storedWorkspace = parseWorkspace(window.localStorage.getItem(WORKSPACE_STORAGE_KEY));
@@ -342,6 +360,7 @@ export default function Home() {
     if (!file) return;
     const content = await file.text();
     const document = createDocument(normalizeMarkdownFilename(file.name), content);
+    resetDocumentNavigation();
     setWorkspace((current) => ({
       ...current,
       activeId: document.id,
@@ -365,6 +384,7 @@ export default function Home() {
 
   const createNewDocument = () => {
     const document = createDocument();
+    resetDocumentNavigation();
     setWorkspace((current) => ({
       ...current,
       activeId: document.id,
@@ -380,6 +400,7 @@ export default function Home() {
       source.filename.replace(/\.md$/i, "-copy.md"),
       source.content,
     );
+    resetDocumentNavigation();
     setWorkspace((current) => ({
       ...current,
       activeId: copy.id,
@@ -391,6 +412,7 @@ export default function Home() {
   const deleteDocument = (id: string) => {
     const target = workspace.documents.find((document) => document.id === id);
     if (!target || !window.confirm(`確定刪除「${target.filename}」？此動作無法復原。`)) return;
+    resetDocumentNavigation();
     setWorkspace((current) => {
       let documents = current.documents.filter((document) => document.id !== id);
       if (!documents.length) documents = [createDocument()];
@@ -406,6 +428,7 @@ export default function Home() {
   const restoreSnapshot = (snapshotId: string) => {
     const snapshot = activeDocument.snapshots.find((item) => item.id === snapshotId);
     if (!snapshot || !window.confirm(`還原「${snapshot.label}」？目前內容會先建立備份。`)) return;
+    resetDocumentNavigation();
     updateActiveDocument((document) => ({
       ...addSnapshot(document, "還原前自動備份"),
       content: snapshot.content,
@@ -426,6 +449,7 @@ export default function Home() {
   const applyPreviewedFix = () => {
     if (!fixPreview) return;
     snapshotActive(`套用「${fixPreview.title}」前`);
+    resetDocumentNavigation();
     setMarkdown(fixPreview.after);
     setFixPreview(null);
     notify("修正已套用，可從版本快照還原");
@@ -474,6 +498,7 @@ export default function Home() {
   const resetExample = () => {
     if (!window.confirm("確定還原 v0.4 範例文件？目前內容會先建立版本快照。")) return;
     snapshotActive("還原範例前");
+    resetDocumentNavigation();
     setMarkdown(STARTER_DOCUMENT);
     setFilename("document-workflow.md");
     notify("已還原範例文件");
@@ -676,7 +701,11 @@ export default function Home() {
         workspace={workspace}
         onClose={() => setDocumentsOpen(false)}
         onCreate={createNewDocument}
-        onActivate={(id) => { setWorkspace((current) => ({ ...current, activeId: id })); setMode("split"); }}
+        onActivate={(id) => {
+          resetDocumentNavigation();
+          setWorkspace((current) => ({ ...current, activeId: id }));
+          setMode("split");
+        }}
         onDuplicate={duplicateDocument}
         onDelete={deleteDocument}
         onSnapshot={() => { snapshotActive("手動快照"); notify("版本快照已建立"); }}
