@@ -148,6 +148,7 @@ export default function Home() {
   const [mode, setMode] = useState<"split" | "editor" | "preview">("split");
   const [assistantOpen, setAssistantOpen] = useState(true);
   const [splitPercent, setSplitPercent] = useState(48);
+  const [splitLoaded, setSplitLoaded] = useState(false);
   const [resizing, setResizing] = useState(false);
   const [checks, setChecks] = useState<MermaidCheck[]>([]);
   const [checking, setChecking] = useState(false);
@@ -166,6 +167,7 @@ export default function Home() {
       if (savedName) setFilename(savedName);
       if (savedTheme === "dark") setDark(true);
       if (savedSplit >= 25 && savedSplit <= 75) setSplitPercent(savedSplit);
+      setSplitLoaded(true);
     }, 0);
     return () => window.clearTimeout(timer);
   }, []);
@@ -179,8 +181,9 @@ export default function Home() {
   }, [markdown, filename]);
 
   useEffect(() => {
+    if (!splitLoaded) return;
     window.localStorage.setItem("md-mermaid-studio-split", String(splitPercent));
-  }, [splitPercent]);
+  }, [splitPercent, splitLoaded]);
 
   useEffect(() => {
     window.localStorage.setItem("md-mermaid-studio-theme", dark ? "dark" : "light");
