@@ -17,6 +17,7 @@ import {
   Sun,
 } from "lucide-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -146,20 +147,27 @@ export default function Home() {
   const [dark, setDark] = useState(false);
   const [mode, setMode] = useState<"split" | "editor" | "preview">("split");
   const [assistantOpen, setAssistantOpen] = useState(true);
+  const [splitPercent, setSplitPercent] = useState(48);
+  const [splitLoaded, setSplitLoaded] = useState(false);
+  const [resizing, setResizing] = useState(false);
   const [checks, setChecks] = useState<MermaidCheck[]>([]);
   const [checking, setChecking] = useState(false);
   const [toast, setToast] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       const saved = window.localStorage.getItem("md-mermaid-studio-document");
       const savedName = window.localStorage.getItem("md-mermaid-studio-filename");
       const savedTheme = window.localStorage.getItem("md-mermaid-studio-theme");
+      const savedSplit = Number(window.localStorage.getItem("md-mermaid-studio-split"));
       if (saved) setMarkdown(saved);
       if (savedName) setFilename(savedName);
       if (savedTheme === "dark") setDark(true);
+      if (savedSplit >= 25 && savedSplit <= 75) setSplitPercent(savedSplit);
+      setSplitLoaded(true);
     }, 0);
     return () => window.clearTimeout(timer);
   }, []);
@@ -171,6 +179,11 @@ export default function Home() {
     }, 350);
     return () => window.clearTimeout(timer);
   }, [markdown, filename]);
+
+  useEffect(() => {
+    if (!splitLoaded) return;
+    window.localStorage.setItem("md-mermaid-studio-split", String(splitPercent));
+  }, [splitPercent, splitLoaded]);
 
   useEffect(() => {
     window.localStorage.setItem("md-mermaid-studio-theme", dark ? "dark" : "light");
@@ -230,6 +243,22 @@ export default function Home() {
       area.focus();
       area.setSelectionRange(start + text.length, start + text.length);
     });
+  };
+
+  const resizeSplit = useCallback((clientX: number) => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    const bounds = stage.getBoundingClientRect();
+    const assistantWidth = assistantOpen && window.innerWidth > 1040 ? 286 : 0;
+    const availableWidth = bounds.width - assistantWidth - 10;
+    const next = ((clientX - bounds.left) / availableWidth) * 100;
+    setSplitPercent(Math.min(75, Math.max(25, next)));
+  }, [assistantOpen]);
+
+  const handleResizeStart = (event: ReactPointerEvent<HTMLDivElement>) => {
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setResizing(true);
+    resizeSplit(event.clientX);
   };
 
   const handleFile = async (file?: File) => {
@@ -342,7 +371,14 @@ export default function Home() {
       </section>
 
       <section className="workspace">
-        <div className={`main-stage mode-${mode} ${assistantOpen ? "with-assistant" : ""}`}>
+        <div
+          ref={stageRef}
+          className={`main-stage mode-${mode} ${assistantOpen ? "with-assistant" : ""} ${resizing ? "is-resizing" : ""}`}
+          style={{
+            "--editor-fr": `${splitPercent}fr`,
+            "--preview-fr": `${100 - splitPercent}fr`,
+          } as CSSProperties}
+        >
           <div className={`editor-pane ${mode === "preview" ? "hidden-pane" : ""}`}>
             <div className="pane-heading">
               <div><span className="eyebrow">SOURCE</span><strong>Markdown</strong></div>
@@ -382,6 +418,38 @@ export default function Home() {
             />
             <div className="pane-status"><span>{markdown.split("\n").length} 行</span><span>{countWords(markdown)} 字詞</span><span>{mermaidBlocks} 張圖</span><span>UTF-8</span></div>
           </div>
+
+          {mode === "split" && (
+            <div
+              className="split-resizer"
+              role="separator"
+              aria-label="調整編輯區與預覽區寬度"
+              aria-orientation="vertical"
+              aria-valuemin={25}
+              aria-valuemax={75}
+              aria-valuenow={Math.round(splitPercent)}
+              title="拖曳調整編輯區與預覽區寬度；雙擊恢復平均"
+              tabIndex={0}
+              onPointerDown={handleResizeStart}
+              onPointerMove={(event) => {
+                if (event.currentTarget.hasPointerCapture(event.pointerId)) resizeSplit(event.clientX);
+              }}
+              onPointerUp={(event) => {
+                event.currentTarget.releasePointerCapture(event.pointerId);
+                setResizing(false);
+              }}
+              onPointerCancel={() => setResizing(false)}
+              onDoubleClick={() => setSplitPercent(50)}
+              onKeyDown={(event) => {
+                if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+                event.preventDefault();
+                const direction = event.key === "ArrowLeft" ? -1 : 1;
+                setSplitPercent((value) => Math.min(75, Math.max(25, value + direction * (event.shiftKey ? 5 : 2))));
+              }}
+            >
+              <span className="split-resizer-handle" aria-hidden="true"><i /><i /><i /></span>
+            </div>
+          )}
 
           <div className={`preview-pane ${mode === "editor" ? "hidden-pane" : ""}`}>
             <div className="pane-heading preview-heading">

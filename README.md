@@ -2,7 +2,7 @@
 
 一個本機優先的 Markdown 與 Mermaid 文件工作台。可直接在瀏覽器開啟、匯入及下載 `.md`，並同步預覽文件與檢查 Mermaid 11 語法。
 
-**線上使用：** [開啟 Markdown Mermaid Studio](https://markdown-mermaid-studio.wacerone.chatgpt.site)
+**線上使用：** [GitHub Pages](https://changrone.github.io/markdown-mermaid-studio/) · [ChatGPT Site](https://markdown-mermaid-studio.wacerone.chatgpt.site)
 
 ## MVP 功能
 
@@ -13,6 +13,7 @@
 - 文件結構健檢、標題層級與待辦清單建議
 - 一鍵複製 AI 完善提示
 - 瀏覽器本機自動儲存、淺色／深色模式及響應式介面
+- 可拖曳或使用鍵盤調整編輯區與預覽區寬度，並保存版面比例
 
 ## 本機執行
 
@@ -28,4 +29,10 @@ npm run lint
 npm run build
 ```
 
-目前版本不會把文件內容傳送至伺服器或外部 AI。瀏覽器儲存只用於保存使用者目前的草稿、檔名與主題偏好。
+## GitHub Pages 部署
+
+推送到 `main` 後，GitHub Actions 會自動建立靜態版本並部署到
+`https://changrone.github.io/markdown-mermaid-studio/`。GitHub Pages 的來源需設為
+**GitHub Actions**。
+
+目前版本不會把文件內容傳送至伺服器或外部 AI。瀏覽器儲存只用於保存使用者目前的草稿、檔名、主題偏好與分割版面比例。
