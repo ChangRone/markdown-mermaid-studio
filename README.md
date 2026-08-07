@@ -1,6 +1,6 @@
 # Markdown Mermaid Studio
 
-一個本機優先的 Markdown 與 Mermaid 文件工作台。可直接在瀏覽器開啟、匯入及下載 `.md`，並同步預覽文件與檢查 Mermaid 11 語法。
+一個本機優先的 Markdown 與 Mermaid 文件工作台。可直接在瀏覽器開啟、匯入及下載 `.md`，並同步預覽文件與檢查 Mermaid 11 語法。\n\n**線上使用：** [開啟 Markdown Mermaid Studio](https://markdown-mermaid-studio.wacerone.chatgpt.site)
 
 ## MVP 功能
 
