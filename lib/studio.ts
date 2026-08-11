@@ -1,6 +1,9 @@
-export const WORKSPACE_STORAGE_KEY = "md-mermaid-studio-workspace-v4";
+export const WORKSPACE_STORAGE_KEY = "md-mermaid-studio-workspace-v5";
+export const LEGACY_WORKSPACE_STORAGE_KEY = "md-mermaid-studio-workspace-v4";
 export const UI_STORAGE_KEY = "md-mermaid-studio-ui-v4";
 export const MAX_SNAPSHOTS = 20;
+export const MAX_PINNED_SNAPSHOTS = 5;
+export const MAX_SNAPSHOT_TAGS = 5;
 
 export const STARTER_DOCUMENT = `---
 title: 文件處理與簽核流程
@@ -53,6 +56,8 @@ $$
 export type Snapshot = {
   id: string;
   label: string;
+  tags: string[];
+  pinned: boolean;
   content: string;
   createdAt: number;
 };
@@ -67,9 +72,28 @@ export type StudioDocument = {
 };
 
 export type StudioWorkspace = {
-  version: 4;
+  version: 5;
   activeId: string;
   documents: StudioDocument[];
+};
+
+export type WorkspaceBackup = {
+  format: "markdown-mermaid-studio-backup";
+  schemaVersion: 1;
+  appVersion: string;
+  exportedAt: number;
+  workspace: StudioWorkspace;
+  preferences?: UiPreferences;
+};
+
+export type SnapshotDifference = {
+  beforeLines: number;
+  afterLines: number;
+  commonPrefixLines: number;
+  commonSuffixLines: number;
+  removedLines: number;
+  addedLines: number;
+  identical: boolean;
 };
 
 export type UiPreferences = {
@@ -141,13 +165,53 @@ export function createDocument(
 
 export function createDefaultWorkspace(now = Date.now()): StudioWorkspace {
   const document = createDocument("document-workflow.md", STARTER_DOCUMENT, now);
-  return { version: 4, activeId: document.id, documents: [document] };
+  return { version: 5, activeId: document.id, documents: [document] };
 }
 
 export function normalizeMarkdownFilename(filename: string) {
   const cleaned = filename.trim().replace(/[\\/:*?"<>|]/g, "-") || "document";
   const withoutSupportedExtension = cleaned.replace(/\.(?:md|markdown|mdown|mkd|txt)$/i, "");
   return `${withoutSupportedExtension || "document"}.md`;
+}
+
+export function normalizeSnapshotLabel(label: string) {
+  const normalized = label.trim().replace(/\s+/g, " ").slice(0, 60);
+  return normalized || "未命名快照";
+}
+
+export function normalizeSnapshotTags(tags: string[] | string) {
+  const values = Array.isArray(tags) ? tags : tags.split(/[,，]/);
+  const normalized: string[] = [];
+  for (const value of values) {
+    const tag = String(value).trim().replace(/^#+/, "").replace(/\s+/g, " ").slice(0, 20);
+    if (!tag || normalized.some((item) => item.toLocaleLowerCase() === tag.toLocaleLowerCase())) continue;
+    normalized.push(tag);
+    if (normalized.length >= MAX_SNAPSHOT_TAGS) break;
+  }
+  return normalized;
+}
+
+function normalizeStoredSnapshots(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  let pinnedCount = 0;
+  const snapshots: Snapshot[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object") continue;
+    const candidate = item as Partial<Snapshot>;
+    if (typeof candidate.content !== "string") continue;
+    const pinned = candidate.pinned === true && pinnedCount < MAX_PINNED_SNAPSHOTS;
+    if (pinned) pinnedCount += 1;
+    snapshots.push({
+      id: typeof candidate.id === "string" ? candidate.id : createId("snapshot"),
+      label: normalizeSnapshotLabel(typeof candidate.label === "string" ? candidate.label : "舊版快照"),
+      tags: normalizeSnapshotTags(Array.isArray(candidate.tags) ? candidate.tags : []),
+      pinned,
+      content: candidate.content,
+      createdAt: Number(candidate.createdAt) || Date.now(),
+    });
+    if (snapshots.length >= MAX_SNAPSHOTS) break;
+  }
+  return snapshots;
 }
 
 export function parseWorkspace(value: string | null): StudioWorkspace | null {
@@ -166,7 +230,7 @@ export function parseWorkspace(value: string | null): StudioWorkspace | null {
     );
     if (!documents.length) return null;
     return {
-      version: 4,
+      version: 5,
       activeId: documents.some((document) => document.id === parsed.activeId)
         ? String(parsed.activeId)
         : documents[0].id,
@@ -175,9 +239,7 @@ export function parseWorkspace(value: string | null): StudioWorkspace | null {
         filename: normalizeMarkdownFilename(document.filename),
         createdAt: Number(document.createdAt) || Date.now(),
         updatedAt: Number(document.updatedAt) || Date.now(),
-        snapshots: Array.isArray(document.snapshots)
-          ? document.snapshots.slice(0, MAX_SNAPSHOTS)
-          : [],
+        snapshots: normalizeStoredSnapshots(document.snapshots),
       })),
     };
   } catch {
@@ -216,7 +278,20 @@ export function migrateLegacyWorkspace(): StudioWorkspace | null {
   const filename =
     window.localStorage.getItem("md-mermaid-studio-filename") || "document-workflow.md";
   const document = createDocument(filename, content);
-  return { version: 4, activeId: document.id, documents: [document] };
+  return { version: 5, activeId: document.id, documents: [document] };
+}
+
+function retainSnapshots(snapshots: Snapshot[]) {
+  const pinnedIds = new Set(
+    snapshots.filter((snapshot) => snapshot.pinned).slice(0, MAX_PINNED_SNAPSHOTS).map((snapshot) => snapshot.id),
+  );
+  let unpinnedSlots = Math.max(0, MAX_SNAPSHOTS - pinnedIds.size);
+  return snapshots.filter((snapshot) => {
+    if (pinnedIds.has(snapshot.id)) return true;
+    if (unpinnedSlots <= 0) return false;
+    unpinnedSlots -= 1;
+    return true;
+  });
 }
 
 export function addSnapshot(
@@ -224,19 +299,128 @@ export function addSnapshot(
   label: string,
   content = document.content,
   now = Date.now(),
+  tags: string[] = [],
+  updateLatestMetadata = false,
 ): StudioDocument {
   const latest = document.snapshots[0];
-  if (latest?.content === content) return document;
+  if (latest?.content === content) {
+    if (!updateLatestMetadata) return document;
+    const updated = {
+      ...latest,
+      label: normalizeSnapshotLabel(label),
+      tags: normalizeSnapshotTags(tags),
+      createdAt: now,
+    };
+    return { ...document, snapshots: [updated, ...document.snapshots.slice(1)] };
+  }
   const snapshot: Snapshot = {
     id: createId("snapshot"),
-    label,
+    label: normalizeSnapshotLabel(label),
+    tags: normalizeSnapshotTags(tags),
+    pinned: false,
     content,
     createdAt: now,
   };
   return {
     ...document,
-    snapshots: [snapshot, ...document.snapshots].slice(0, MAX_SNAPSHOTS),
+    snapshots: retainSnapshots([snapshot, ...document.snapshots]),
   };
+}
+
+export function updateSnapshot(
+  document: StudioDocument,
+  snapshotId: string,
+  label: string,
+  tags: string[] | string,
+): StudioDocument {
+  return {
+    ...document,
+    snapshots: document.snapshots.map((snapshot) =>
+      snapshot.id === snapshotId
+        ? { ...snapshot, label: normalizeSnapshotLabel(label), tags: normalizeSnapshotTags(tags) }
+        : snapshot,
+    ),
+  };
+}
+
+export function deleteSnapshot(document: StudioDocument, snapshotId: string): StudioDocument {
+  return {
+    ...document,
+    snapshots: document.snapshots.filter((snapshot) => snapshot.id !== snapshotId),
+  };
+}
+
+export function toggleSnapshotPinned(document: StudioDocument, snapshotId: string): StudioDocument {
+  const target = document.snapshots.find((snapshot) => snapshot.id === snapshotId);
+  if (!target) return document;
+  const pinnedCount = document.snapshots.filter((snapshot) => snapshot.pinned).length;
+  if (!target.pinned && pinnedCount >= MAX_PINNED_SNAPSHOTS) return document;
+  return {
+    ...document,
+    snapshots: document.snapshots.map((snapshot) =>
+      snapshot.id === snapshotId ? { ...snapshot, pinned: !snapshot.pinned } : snapshot,
+    ),
+  };
+}
+
+export function snapshotDifference(before: string, after: string): SnapshotDifference {
+  const beforeRows = before.split("\n");
+  const afterRows = after.split("\n");
+  let prefix = 0;
+  while (prefix < beforeRows.length && prefix < afterRows.length && beforeRows[prefix] === afterRows[prefix]) {
+    prefix += 1;
+  }
+  let suffix = 0;
+  while (
+    suffix < beforeRows.length - prefix &&
+    suffix < afterRows.length - prefix &&
+    beforeRows[beforeRows.length - 1 - suffix] === afterRows[afterRows.length - 1 - suffix]
+  ) {
+    suffix += 1;
+  }
+  return {
+    beforeLines: beforeRows.length,
+    afterLines: afterRows.length,
+    commonPrefixLines: prefix,
+    commonSuffixLines: suffix,
+    removedLines: Math.max(0, beforeRows.length - prefix - suffix),
+    addedLines: Math.max(0, afterRows.length - prefix - suffix),
+    identical: before === after,
+  };
+}
+
+export function createWorkspaceBackup(
+  workspace: StudioWorkspace,
+  appVersion: string,
+  preferences?: UiPreferences,
+  now = Date.now(),
+) {
+  const backup: WorkspaceBackup = {
+    format: "markdown-mermaid-studio-backup",
+    schemaVersion: 1,
+    appVersion,
+    exportedAt: now,
+    workspace,
+    ...(preferences ? { preferences } : {}),
+  };
+  return JSON.stringify(backup, null, 2);
+}
+
+export function parseWorkspaceBackup(value: string) {
+  try {
+    const parsed = JSON.parse(value) as Partial<WorkspaceBackup> & Partial<StudioWorkspace>;
+    const workspaceValue = parsed.workspace || parsed;
+    const workspace = parseWorkspace(JSON.stringify(workspaceValue));
+    if (!workspace) return null;
+    return {
+      workspace,
+      preferences: parsed.preferences
+        ? parseUiPreferences(JSON.stringify(parsed.preferences))
+        : undefined,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export function lineAtOffset(content: string, offset: number) {

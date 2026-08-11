@@ -30,10 +30,13 @@ import {
 import DocumentDrawer from "@/components/DocumentDrawer";
 import MarkdownPreview from "@/components/MarkdownPreview";
 import SearchPanel from "@/components/SearchPanel";
+import SnapshotCompareDialog from "@/components/SnapshotCompareDialog";
 import SyntaxCatalog from "@/components/SyntaxCatalog";
 import packageInfo from "../package.json";
 import {
   STARTER_DOCUMENT,
+  LEGACY_WORKSPACE_STORAGE_KEY,
+  MAX_PINNED_SNAPSHOTS,
   UI_STORAGE_KEY,
   WORKSPACE_STORAGE_KEY,
   addSnapshot,
@@ -43,18 +46,26 @@ import {
   countWords,
   createDefaultWorkspace,
   createDocument,
+  createWorkspaceBackup,
+  deleteSnapshot,
   extractMermaidBlocks,
   findSearchMatches,
   lineAtOffset,
   mermaidErrorDetails,
   migrateLegacyWorkspace,
   normalizeMarkdownFilename,
+  normalizeSnapshotLabel,
+  normalizeSnapshotTags,
   offsetAtLine,
   parseUiPreferences,
   parseWorkspace,
+  parseWorkspaceBackup,
   replaceAllMatches,
+  toggleSnapshotPinned,
+  updateSnapshot,
   type MermaidCheck,
   type QuickFixId,
+  type Snapshot,
   type StudioDocument,
 } from "@/lib/studio";
 
@@ -85,6 +96,7 @@ export default function Home() {
   const [activeSourceLine, setActiveSourceLine] = useState<number>();
   const [toast, setToast] = useState("");
   const [fixPreview, setFixPreview] = useState<FixPreview>(null);
+  const [snapshotCompare, setSnapshotCompare] = useState<Snapshot | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -99,6 +111,12 @@ export default function Home() {
   );
   const markdown = activeDocument.content;
   const filename = activeDocument.filename;
+  const storageBytes = useMemo(() => {
+    const serialized = JSON.stringify(workspace);
+    return typeof TextEncoder === "undefined"
+      ? serialized.length
+      : new TextEncoder().encode(serialized).length;
+  }, [workspace]);
 
   const notify = useCallback((message: string) => setToast(message), []);
 
@@ -122,7 +140,9 @@ export default function Home() {
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      const storedWorkspace = parseWorkspace(window.localStorage.getItem(WORKSPACE_STORAGE_KEY));
+      const storedWorkspace =
+        parseWorkspace(window.localStorage.getItem(WORKSPACE_STORAGE_KEY)) ||
+        parseWorkspace(window.localStorage.getItem(LEGACY_WORKSPACE_STORAGE_KEY));
       setWorkspace(storedWorkspace || migrateLegacyWorkspace() || createDefaultWorkspace());
       setWorkspaceLoaded(true);
 
@@ -147,6 +167,7 @@ export default function Home() {
     const timer = window.setTimeout(() => {
       try {
         window.localStorage.setItem(WORKSPACE_STORAGE_KEY, JSON.stringify(workspace));
+        window.localStorage.removeItem(LEGACY_WORKSPACE_STORAGE_KEY);
       } catch {
         notify("本機儲存空間不足，請下載文件或刪除舊快照");
       }
@@ -207,8 +228,10 @@ export default function Home() {
   );
 
   const snapshotActive = useCallback(
-    (label: string) => {
-      updateActiveDocument((document) => addSnapshot(document, label));
+    (label: string, tags: string[] = [], updateLatestMetadata = false) => {
+      updateActiveDocument((document) =>
+        addSnapshot(document, label, document.content, Date.now(), tags, updateLatestMetadata),
+      );
     },
     [updateActiveDocument],
   );
@@ -371,15 +394,63 @@ export default function Home() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const download = () => {
-    const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
+  const downloadContent = (content: string, downloadFilename: string, type: string) => {
+    const blob = new Blob([content], { type });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = normalizeMarkdownFilename(filename);
+    link.download = downloadFilename;
     link.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  };
+
+  const download = () => {
+    downloadContent(markdown, normalizeMarkdownFilename(filename), "text/markdown;charset=utf-8");
     notify("Markdown 已下載");
+  };
+
+  const downloadSnapshotContent = (snapshot: Snapshot) => {
+    const base = filename.replace(/\.md$/i, "");
+    const snapshotFilename = normalizeMarkdownFilename(`${base}-${snapshot.label}`);
+    downloadContent(snapshot.content, snapshotFilename, "text/markdown;charset=utf-8");
+    notify("快照 Markdown 已下載");
+  };
+
+  const exportWorkspace = () => {
+    const content = createWorkspaceBackup(
+      workspace,
+      packageInfo.version,
+      { dark, splitPercent, syncPosition, mode },
+    );
+    const date = new Date().toISOString().slice(0, 10);
+    downloadContent(
+      content,
+      `markdown-mermaid-studio-backup-${date}.json`,
+      "application/json;charset=utf-8",
+    );
+    notify("完整工作區備份已下載");
+  };
+
+  const importWorkspace = async (file: File) => {
+    const backup = parseWorkspaceBackup(await file.text());
+    if (!backup) {
+      notify("無法讀取：不是有效的工作區備份");
+      return;
+    }
+    if (!window.confirm(`匯入備份會取代目前 ${workspace.documents.length} 份本機文件。確定繼續？`)) return;
+    resetDocumentNavigation();
+    setWorkspace(backup.workspace);
+    if (backup.preferences) {
+      setDark(backup.preferences.dark);
+      setSplitPercent(backup.preferences.splitPercent);
+      setSyncPosition(backup.preferences.syncPosition);
+      setMode(backup.preferences.mode);
+    } else {
+      setMode("split");
+    }
+    setSnapshotCompare(null);
+    setDocumentsOpen(false);
+    notify(`已匯入 ${backup.workspace.documents.length} 份文件與全部快照`);
   };
 
   const createNewDocument = () => {
@@ -434,7 +505,43 @@ export default function Home() {
       content: snapshot.content,
       updatedAt: Date.now(),
     }));
+    setSnapshotCompare(null);
     notify("快照已還原");
+  };
+
+  const createNamedSnapshot = (label: string, tags: string) => {
+    snapshotActive(label, normalizeSnapshotTags(tags), true);
+    notify("目前版本與標籤已保存");
+  };
+
+  const updateSnapshotDetails = (snapshotId: string, label: string, tags: string) => {
+    updateActiveDocument((document) => updateSnapshot(document, snapshotId, label, tags));
+    setSnapshotCompare((current) =>
+      current?.id === snapshotId
+        ? { ...current, label: normalizeSnapshotLabel(label), tags: normalizeSnapshotTags(tags) }
+        : current,
+    );
+    notify("快照名稱與標籤已更新");
+  };
+
+  const removeSnapshot = (snapshotId: string) => {
+    const snapshot = activeDocument.snapshots.find((item) => item.id === snapshotId);
+    if (!snapshot || !window.confirm(`確定刪除快照「${snapshot.label}」？此動作無法復原。`)) return;
+    updateActiveDocument((document) => deleteSnapshot(document, snapshotId));
+    if (snapshotCompare?.id === snapshotId) setSnapshotCompare(null);
+    notify("快照已刪除");
+  };
+
+  const togglePinnedSnapshot = (snapshotId: string) => {
+    const snapshot = activeDocument.snapshots.find((item) => item.id === snapshotId);
+    if (!snapshot) return;
+    const pinnedCount = activeDocument.snapshots.filter((item) => item.pinned).length;
+    if (!snapshot.pinned && pinnedCount >= MAX_PINNED_SNAPSHOTS) {
+      notify(`每份文件最多釘選 ${MAX_PINNED_SNAPSHOTS} 個快照`);
+      return;
+    }
+    updateActiveDocument((document) => toggleSnapshotPinned(document, snapshotId));
+    notify(snapshot.pinned ? "已取消釘選" : "已釘選，達上限時會優先保留");
   };
 
   const previewQuickFix = (fixId: QuickFixId, title: string) => {
@@ -496,7 +603,7 @@ export default function Home() {
   };
 
   const resetExample = () => {
-    if (!window.confirm("確定還原 v0.4 範例文件？目前內容會先建立版本快照。")) return;
+    if (!window.confirm("確定還原 v0.5 範例文件？目前內容會先建立版本快照。")) return;
     snapshotActive("還原範例前");
     resetDocumentNavigation();
     setMarkdown(STARTER_DOCUMENT);
@@ -688,17 +795,19 @@ export default function Home() {
                 ))}
               </div>
               <button className="button assistant-action" onClick={() => void copyAiPrompt()}><Clipboard size={16} />複製 AI 完善提示</button>
-              <button className="text-action" onClick={() => { snapshotActive("手動快照"); notify("版本快照已建立"); }}><Camera size={14} />建立目前版本快照</button>
-              <button className="text-action" onClick={resetExample}><FileCode2 size={14} />還原 v0.4 範例文件</button>
-              <div className="privacy-note"><span>●</span> 文件不會上傳；多文件與快照只保存在這台裝置。</div>
+              <button className="text-action" onClick={() => setDocumentsOpen(true)}><Camera size={14} />管理版本快照</button>
+              <button className="text-action" onClick={resetExample}><FileCode2 size={14} />還原 v0.5 範例文件</button>
+              <div className="privacy-note"><span>●</span> 文件不會上傳；重要工作區請定期匯出 JSON 備份。</div>
             </aside>
           )}
         </div>
       </section>
 
       <DocumentDrawer
+        key={workspace.activeId}
         open={documentsOpen}
         workspace={workspace}
+        storageBytes={storageBytes}
         onClose={() => setDocumentsOpen(false)}
         onCreate={createNewDocument}
         onActivate={(id) => {
@@ -708,10 +817,24 @@ export default function Home() {
         }}
         onDuplicate={duplicateDocument}
         onDelete={deleteDocument}
-        onSnapshot={() => { snapshotActive("手動快照"); notify("版本快照已建立"); }}
+        onSnapshot={createNamedSnapshot}
         onRestore={restoreSnapshot}
+        onUpdateSnapshot={updateSnapshotDetails}
+        onDeleteSnapshot={removeSnapshot}
+        onToggleSnapshotPinned={togglePinnedSnapshot}
+        onCompareSnapshot={setSnapshotCompare}
+        onDownloadSnapshot={downloadSnapshotContent}
+        onExportWorkspace={exportWorkspace}
+        onImportWorkspace={(file) => void importWorkspace(file)}
       />
       <SyntaxCatalog open={catalogOpen} onClose={() => setCatalogOpen(false)} onInsert={insertText} />
+      <SnapshotCompareDialog
+        snapshot={snapshotCompare}
+        currentContent={markdown}
+        onClose={() => setSnapshotCompare(null)}
+        onRestore={restoreSnapshot}
+        onDownload={downloadSnapshotContent}
+      />
 
       {fixPreview && (
         <div className="fix-backdrop" role="presentation" onMouseDown={() => setFixPreview(null)}>

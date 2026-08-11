@@ -123,7 +123,7 @@ export const DIAGRAM_TEMPLATES: DiagramTemplate[] = [
     category: "規劃",
     docs: "gantt.html",
     code: `gantt
-    title v0.4 建置時程
+    title v0.5 建置時程
     dateFormat YYYY-MM-DD
     section 規劃
     需求確認 :done, a1, 2026-08-07, 1d
@@ -185,7 +185,7 @@ export const DIAGRAM_TEMPLATES: DiagramTemplate[] = [
     commit id: "MVP"
     branch feature
     checkout feature
-    commit id: "v0.4"
+    commit id: "v0.5"
     checkout main
     merge feature
     commit id: "deploy"`,
@@ -232,7 +232,7 @@ export const DIAGRAM_TEMPLATES: DiagramTemplate[] = [
     MVP : 即時預覽 : 本機儲存
     v0.2 : 語法強化 : 錯誤定位
     v0.3 : 文件助手 : 快速修正
-    v0.4 : 多文件 : 快照 : 雙向定位`,
+    v0.5 : 多文件 : 快照管理 : 雙向定位`,
   },
   {
     id: "sankey",
