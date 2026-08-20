@@ -4,7 +4,7 @@
 
 **線上使用：** [GitHub Pages](https://changrone.github.io/markdown-mermaid-studio/)
 
-## v0.5.1 功能
+## v0.5.2 功能
 
 - `.md`／`.markdown`／`.mdown`／`.mkd`／`.txt` 匯入，統一下載為 UTF-8 `.md`
 - 多文件工作區、複製／刪除、每份文件最多 20 份本機版本快照與安全還原

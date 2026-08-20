@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.2 - 2026-08-20
+
+### Fixed
+
+- 部分瀏覽器無法在 Flowchart 節點內對檔名、底線或中英混合標點建立斷行點，導致 `platform_checker.sh`、`Gitea：Tag、Commit、Manifest` 等完整文字遭節點邊界裁切。
+- 相同的長單字問題也可能出現在 Flowchart 連線標籤與群組標題。
+
+### Changed
+
+- 將長單字的跨瀏覽器斷行 fallback 嵌入 Mermaid SVG；網頁預覽、下載 SVG 與 PNG 共用相同顯示結果，且不改寫 Markdown 原始碼。
+
 ## 0.5.1 - 2026-08-20
 
 ### Fixed

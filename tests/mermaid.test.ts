@@ -12,6 +12,10 @@ test("production Mermaid config enables supported long-label wrapping", () => {
 
   assert.equal(light.markdownAutoWrap, true);
   assert.equal(light.htmlLabels, true);
+  assert.match(light.themeCSS ?? "", /overflow-wrap:\s*anywhere/u);
+  assert.match(light.themeCSS ?? "", /word-break:\s*break-word/u);
+  assert.match(light.themeCSS ?? "", /\.edgeLabel/u);
+  assert.match(light.themeCSS ?? "", /\.cluster-label/u);
   assert.equal(light.flowchart?.wrappingWidth, MERMAID_LABEL_WRAP_WIDTH);
   assert.equal(light.sequence?.wrap, true);
   assert.equal(light.sequence?.wrapPadding, 12);
@@ -87,9 +91,24 @@ test("prepared long-label diagrams remain valid Mermaid", async () => {
     Element: dom.window.Element,
     HTMLElement: dom.window.HTMLElement,
     SVGElement: dom.window.SVGElement,
+    Node: dom.window.Node,
+    CSSStyleSheet: dom.window.CSSStyleSheet,
   })) {
     Object.defineProperty(globalThis, key, { value, configurable: true });
   }
+  Object.defineProperty(dom.window.SVGElement.prototype, "getBBox", {
+    configurable: true,
+    value(this: SVGElement) {
+      const text = this.textContent ?? "";
+      return { x: 0, y: 0, width: Math.max(40, text.length * 8), height: 32 };
+    },
+  });
+  Object.defineProperty(dom.window.SVGElement.prototype, "getComputedTextLength", {
+    configurable: true,
+    value(this: SVGElement) {
+      return (this.textContent ?? "").length * 8;
+    },
+  });
 
   const mermaid = (await import("mermaid")).default;
   mermaid.initialize(getMermaidConfig(false));
@@ -98,6 +117,8 @@ test("prepared long-label diagrams remain valid Mermaid", async () => {
     `flowchart TD
       subgraph review["這是一段很長的群組標題，用來確認流程圖能依照群組寬度自動換行並完整顯示"]
         A[這是一段很長的節點文字，用來確認節點也能自動換行並完整顯示]
+        CHECKER["控制程式：platform_checker.sh"]
+        GITEA["Gitea：Tag、Commit、Manifest"]
       end`,
     `sequenceDiagram
       participant A as 這是一個名稱很長的申請端系統需要自動換行
@@ -108,6 +129,14 @@ test("prepared long-label diagrams remain valid Mermaid", async () => {
   for (const diagram of diagrams) {
     await assert.doesNotReject(() => mermaid.parse(prepareMermaidCode(diagram)));
   }
+
+  const rendered = await mermaid.render(
+    "flowchart-long-token-regression",
+    prepareMermaidCode(diagrams[0]),
+  );
+  assert.match(rendered.svg, /overflow-wrap:\s*anywhere/u);
+  assert.match(rendered.svg, /platform_checker\.sh/u);
+  assert.match(rendered.svg, /Gitea：Tag、Commit、Manifest/u);
 });
 
 test("Block diagrams render without serializing circular DOM nodes", async () => {

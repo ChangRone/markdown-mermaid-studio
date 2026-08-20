@@ -8,10 +8,11 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const output = path.join(root, "out");
 const htmlPath = path.join(output, "index.html");
 
-test("Pages export contains the v0.5.1 snapshot workspace shell", () => {
+test("Pages export contains the v0.5.2 snapshot workspace shell", () => {
   assert.ok(existsSync(htmlPath), "out/index.html should exist after next build");
   const html = readFileSync(htmlPath, "utf8");
   assert.match(html, /<title>Markdown Mermaid Studio<\/title>/);
+  assert.match(html, /v(?:<!-- -->)?0\.5\.2/);
   assert.match(html, /雙向定位/);
   assert.match(html, /完整語法/);
   assert.match(html, /文件健檢/);

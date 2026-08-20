@@ -1,7 +1,7 @@
 # Project Status
 
 更新日期：2026-08-20
-目前版本：v0.5.1
+目前版本：v0.5.2
 發布分支：`main`
 正式路徑：`/markdown-mermaid-studio/`
 
@@ -12,7 +12,7 @@
 | Markdown 匯入／輸出 | DONE | 支援常用文字副檔名，輸出單一 `.md` |
 | 即時編輯與預覽 | DONE | 編輯後立即更新 CommonMark／GFM／數學公式／frontmatter |
 | Mermaid 語法與目錄 | DONE | Mermaid 11.17.0 核心 29 種範本全部通過 production parser |
-| Mermaid 長文字 | DONE | Flowchart／Sequence 長文字換行；State、Mindmap、Kanban、Journey、Architecture、C4 與 Block 長標籤完成正式瀏覽器壓力測試 |
+| Mermaid 長文字 | DONE | Flowchart／Sequence 長文字換行；檔名、底線與中英混合標點具跨瀏覽器斷行 fallback；State、Mindmap、Kanban、Journey、Architecture、C4 與 Block 長標籤完成正式瀏覽器壓力測試 |
 | Mermaid Block 相容性 | DONE | Mermaid 11.17.0 循環 DOM 序列化已修補，基準與長標籤 Block 圖可實際 render |
 | Mermaid 錯誤定位 | DONE | 顯示實際來源行並能直接跳轉 |
 | Mermaid 輸出 | DONE | 每張圖可輸出 SVG、PNG及複製原始碼 |

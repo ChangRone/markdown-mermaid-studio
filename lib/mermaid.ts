@@ -4,6 +4,12 @@ export const MERMAID_LABEL_WRAP_WIDTH = 200;
 export const MERMAID_FONT_FAMILY =
   "Inter, Noto Sans TC, PingFang TC, Microsoft JhengHei, system-ui, sans-serif";
 
+const LONG_TOKEN_WRAP_CSS = `
+.nodeLabel, .edgeLabel, .cluster-label {
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+}`;
+
 const LONG_GROUP_LABEL_WIDTH = 32;
 const LONG_BLOCK_LABEL_WIDTH = 24;
 
@@ -127,6 +133,10 @@ export function getMermaidConfig(dark: boolean): MermaidConfig {
     securityLevel: "strict",
     suppressErrorRendering: true,
     theme: dark ? "dark" : "neutral",
+    // Mermaid 會在標籤超過 wrappingWidth 時將容器切成多行，但不同瀏覽器
+    // 對檔名、底線與中英標點的斷行點判定不一致。把 fallback 樣式嵌入 SVG，
+    // 可同時保護畫面預覽、下載 SVG 與 PNG，而不需要改寫使用者原始碼。
+    themeCSS: LONG_TOKEN_WRAP_CSS,
     fontFamily: MERMAID_FONT_FAMILY,
     htmlLabels: true,
     markdownAutoWrap: true,
