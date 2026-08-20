@@ -85,3 +85,47 @@ test("prepared long-label diagrams remain valid Mermaid", async () => {
     await assert.doesNotReject(() => mermaid.parse(prepareMermaidCode(diagram)));
   }
 });
+
+test("Block diagrams render without serializing circular DOM nodes", async () => {
+  const { JSDOM } = await import("jsdom");
+  const dom = new JSDOM("<!doctype html><html><body></body></html>", {
+    url: "https://example.test",
+  });
+  for (const [key, value] of Object.entries({
+    window: dom.window,
+    document: dom.window.document,
+    navigator: dom.window.navigator,
+    Element: dom.window.Element,
+    HTMLElement: dom.window.HTMLElement,
+    SVGElement: dom.window.SVGElement,
+    Node: dom.window.Node,
+    CSSStyleSheet: dom.window.CSSStyleSheet,
+  })) {
+    Object.defineProperty(globalThis, key, { value, configurable: true });
+  }
+  Object.defineProperty(dom.window.SVGElement.prototype, "getBBox", {
+    configurable: true,
+    value(this: SVGElement) {
+      const text = this.textContent ?? "";
+      return { x: 0, y: 0, width: Math.max(40, text.length * 8), height: 32 };
+    },
+  });
+  Object.defineProperty(dom.window.SVGElement.prototype, "getComputedTextLength", {
+    configurable: true,
+    value(this: SVGElement) {
+      return (this.textContent ?? "").length * 8;
+    },
+  });
+
+  const mermaid = (await import("mermaid")).default;
+  mermaid.initialize(getMermaidConfig(false));
+  const rendered = await mermaid.render(
+    "block-long-label-regression",
+    `block-beta
+      columns 3
+      source["這是一個很長的資料來源區塊需要完整換行顯示"] --> parser["這是一個很長的解析器區塊需要完整換行顯示"] --> preview["這是一個很長的預覽區塊需要完整換行顯示"]`,
+  );
+
+  assert.match(rendered.svg, /<svg/);
+  assert.match(rendered.svg, /class="block"/);
+});

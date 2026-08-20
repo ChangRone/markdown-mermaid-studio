@@ -12,7 +12,8 @@
 | Markdown 匯入／輸出 | DONE | 支援常用文字副檔名，輸出單一 `.md` |
 | 即時編輯與預覽 | DONE | 編輯後立即更新 CommonMark／GFM／數學公式／frontmatter |
 | Mermaid 語法與目錄 | DONE | Mermaid 11.17.0 核心 29 種範本全部通過 production parser |
-| Mermaid 長文字 | DONE | Flowchart 節點／連線／群組與 Sequence 參與者／訊息／備註會在合理寬度換行 |
+| Mermaid 長文字 | DONE | Flowchart／Sequence 長文字換行；State、Mindmap、Kanban、Journey、Architecture、C4 與 Block 長標籤完成正式瀏覽器壓力測試 |
+| Mermaid Block 相容性 | DONE | Mermaid 11.17.0 循環 DOM 序列化已修補，基準與長標籤 Block 圖可實際 render |
 | Mermaid 錯誤定位 | DONE | 顯示實際來源行並能直接跳轉 |
 | Mermaid 輸出 | DONE | 每張圖可輸出 SVG、PNG及複製原始碼 |
 | 雙向定位 | DONE | Source 游標→Preview；Preview 點選→Source 精確行 |
@@ -26,7 +27,7 @@
 | 行動裝置 | DONE | 小螢幕並排模式改為上下配置，工具列可操作 |
 | 隱私與安全 | DONE | 無登入／DB／自動外傳；raw HTML 關閉；Mermaid strict |
 | 可重現部署 | DONE | lockfile、`npm ci`、Node 24 Actions |
-| 品質關卡 | DONE | lint、unit、29 Mermaid templates、source map、Pages smoke |
+| 品質關卡 | DONE | lint、unit、Block render、29 Mermaid templates、source map、Pages smoke |
 | 自動發布 | DONE | `main` 通過全部關卡後自動發布 GitHub Pages |
 | 相容更新 | DONE | 每月更新相容依賴，測試成功後才更新 `main` |
 

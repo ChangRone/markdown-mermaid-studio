@@ -18,7 +18,7 @@
 - 文字搜尋、上一筆／下一筆、區分大小寫、逐筆與全部取代
 - CommonMark、GFM、frontmatter、註腳、數學公式與安全的外部連結預覽
 - Mermaid 11.17.0 即時渲染、精確錯誤行、29 種核心圖表範本與官方文件入口
-- 流程圖節點／連線與長 `subgraph` 標題自動換行；循序圖參與者、訊息與備註預設自動換行
+- 流程圖節點／連線與長 `subgraph` 標題自動換行；循序圖參與者、訊息與備註預設自動換行；Block 11.17 renderer 相容修補
 - 每張 Mermaid 圖可縮放、複製原始碼、下載 SVG 或 PNG
 - 文件結構、標題、圖片替代文字與 Mermaid 健檢
 - 規則修正前後比較、選擇套用、自動建立還原快照
@@ -56,7 +56,7 @@ npm run dev
 npm test
 ```
 
-驗證包含 ESLint、純函式單元測試、長文字換行回歸測試、全部 Mermaid 範本解析、雙向定位 source map、GitHub Pages build 與靜態資源 smoke test。
+驗證包含 ESLint、純函式單元測試、長文字換行與 Block 實際 render 回歸測試、全部 Mermaid 範本解析、雙向定位 source map、GitHub Pages build 與靜態資源 smoke test。
 
 ## GitHub Pages 部署
 
