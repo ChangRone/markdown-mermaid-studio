@@ -17,6 +17,7 @@ test("production Mermaid config enables supported long-label wrapping", () => {
   assert.equal(light.sequence?.wrapPadding, 12);
   assert.equal(light.c4?.wrap, true);
   assert.equal(light.mindmap?.maxNodeWidth, MERMAID_LABEL_WRAP_WIDTH);
+  assert.equal(light.block?.useMaxWidth, true);
   assert.equal(light.theme, "neutral");
   assert.equal(dark.theme, "dark");
 });
@@ -49,6 +50,26 @@ test("explicit wrapping and existing Markdown labels are preserved", () => {
   end`;
 
   assert.equal(prepareMermaidCode(source), source);
+});
+
+test("long Block shape labels receive render-only line breaks", () => {
+  const longLabel = "這是一個很長的資料來源區塊，需要在區塊內自動換行並保持完整可讀";
+  const edgeLabel = "這是一段很長的連線文字，但不是 shape label，所以不應被改寫";
+  const source = `block-beta
+  columns 3
+  source["${longLabel}"] parser["已指定<br/>換行"] preview["短標題"]
+  source -- "${edgeLabel}" --> parser`;
+  const prepared = prepareMermaidCode(source);
+  const preparedLabel = prepared.match(/source\["([^"]+)"\]/u)?.[1];
+
+  assert.ok(preparedLabel?.includes("<br/>"));
+  assert.match(prepared, /parser\["已指定<br\/>換行"\]/u);
+  assert.ok(prepared.includes(`"${edgeLabel}"`));
+  assert.equal(prepared.split("\n").length, source.split("\n").length);
+
+  const flowchartWithBlockNode = `flowchart TD
+  block["${longLabel}"] --> done[完成]`;
+  assert.equal(prepareMermaidCode(flowchartWithBlockNode), flowchartWithBlockNode);
 });
 
 test("prepared long-label diagrams remain valid Mermaid", async () => {
@@ -119,13 +140,21 @@ test("Block diagrams render without serializing circular DOM nodes", async () =>
 
   const mermaid = (await import("mermaid")).default;
   mermaid.initialize(getMermaidConfig(false));
+  const source = `block-beta
+      columns 3
+      source["這是一個很長的資料來源區塊需要完整換行顯示"] parser["這是一個很長的解析器區塊需要完整換行顯示"] preview["這是一個很長的預覽區塊需要完整換行顯示"]
+      source --> parser
+      parser --> preview`;
+  const renderCode = prepareMermaidCode(source);
   const rendered = await mermaid.render(
     "block-long-label-regression",
-    `block-beta
-      columns 3
-      source["這是一個很長的資料來源區塊需要完整換行顯示"] --> parser["這是一個很長的解析器區塊需要完整換行顯示"] --> preview["這是一個很長的預覽區塊需要完整換行顯示"]`,
+    renderCode,
   );
 
+  assert.match(renderCode, /<br\/>/u);
   assert.match(rendered.svg, /<svg/);
   assert.match(rendered.svg, /class="block"/);
+  assert.match(rendered.svg, /block-long-label-regression-source/);
+  assert.match(rendered.svg, /block-long-label-regression-parser/);
+  assert.match(rendered.svg, /block-long-label-regression-preview/);
 });

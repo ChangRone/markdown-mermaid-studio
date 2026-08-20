@@ -8,12 +8,14 @@
 - 循序圖參與者、訊息與備註預設不換行，導致整張圖被長文字撐寬。
 - Mermaid Block 圖的長標籤可能造成同層區塊重疊。
 - Mermaid 11.17.0 Block renderer 會在除錯訊息中序列化含 DOM 節點的循環物件，導致所有 Block 圖通過語法檢查後仍無法顯示。
+- Block 圖沒有原生 `wrappingWidth`，長 shape label 仍會把整張圖撐寬；內建 Block 範本同列定義與連線時也會讓節點標籤錯配。
 
 ### Changed
 
 - 升級 Mermaid 至 11.17.0，並統一預覽與語法檢查使用的正式渲染設定。
 - 對 Mermaid 原生未支援 `wrappingWidth` 的流程圖群組標題，僅在渲染階段轉為可自動換行的 Markdown label；來源文字與行號不變。
 - 安裝時套用最小 Mermaid Block 相容修補，移除兩處 eager `JSON.stringify`，並加入實際 render 回歸測試。
+- Block 長 shape label 僅在渲染階段插入安全的 `<br/>`，並依官方語法將範本的節點排列與連線分開宣告。
 
 ## 0.5.0 - 2026-08-11
 

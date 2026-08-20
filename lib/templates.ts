@@ -266,8 +266,10 @@ Process,Returned,20`,
     experimental: true,
     code: `block-beta
     columns 3
-    source["Markdown"] --> parser["解析器"] --> preview["即時預覽"]
-    source --> storage["本機儲存"]`,
+    source["Markdown"] parser["解析器"] preview["即時預覽"] storage["本機儲存"]
+    source --> parser
+    parser --> preview
+    source --> storage`,
   },
   {
     id: "packet",

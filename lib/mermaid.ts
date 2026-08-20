@@ -5,6 +5,7 @@ export const MERMAID_FONT_FAMILY =
   "Inter, Noto Sans TC, PingFang TC, Microsoft JhengHei, system-ui, sans-serif";
 
 const LONG_GROUP_LABEL_WIDTH = 32;
+const LONG_BLOCK_LABEL_WIDTH = 24;
 
 function visualTextWidth(value: string) {
   return Array.from(value).reduce((width, character) => {
@@ -39,8 +40,85 @@ function prepareSubgraphLabel(line: string) {
   return `${line.slice(0, openBracket)}["\`${label}\`"]${line.slice(closeBracket + 1)}`;
 }
 
+function wrapVisualText(value: string, maxWidth: number) {
+  const lines: string[] = [];
+  let current: string[] = [];
+  let currentWidth = 0;
+  let lastWhitespace = -1;
+
+  const recalculateCurrent = () => {
+    while (current.length && /\s/u.test(current[0])) current.shift();
+    currentWidth = visualTextWidth(current.join(""));
+    lastWhitespace = -1;
+    current.forEach((character, index) => {
+      if (/\s/u.test(character)) lastWhitespace = index;
+    });
+  };
+
+  for (const character of Array.from(value)) {
+    const characterWidth = visualTextWidth(character);
+    while (current.length && currentWidth + characterWidth > maxWidth) {
+      if (lastWhitespace > 0) {
+        lines.push(current.slice(0, lastWhitespace).join("").trimEnd());
+        current = current.slice(lastWhitespace + 1);
+      } else {
+        lines.push(current.join("").trimEnd());
+        current = [];
+      }
+      recalculateCurrent();
+    }
+    if (!current.length && /\s/u.test(character)) continue;
+    current.push(character);
+    currentWidth += characterWidth;
+    if (/\s/u.test(character)) lastWhitespace = current.length - 1;
+  }
+
+  if (current.length) lines.push(current.join("").trimEnd());
+  return lines.filter(Boolean).join("<br/>");
+}
+
+function prepareBlockLabel(line: string) {
+  if (/^\s*%%/u.test(line)) return line;
+
+  return line.replace(/"([^"\n]+)"/gu, (match, label: string, offset: number) => {
+    const opener = line.slice(0, offset).trimEnd().at(-1);
+    if (!opener || !"[({>/\\".includes(opener)) return match;
+    if (
+      visualTextWidth(label) <= LONG_BLOCK_LABEL_WIDTH ||
+      /<|>|`|<br\s*\/?>|\\n|&(?:#\d+|#x[\da-f]+|[a-z][\da-z]+);/iu.test(label)
+    ) {
+      return match;
+    }
+
+    // Block 圖目前沒有 wrappingWidth；在 render-only label 內補安全的換行，
+    // 並保留來源行數、原始碼複製與 Source ↔ Preview 定位。
+    return `"${wrapVisualText(label, LONG_BLOCK_LABEL_WIDTH)}"`;
+  });
+}
+
+function isBlockDiagram(lines: string[]) {
+  let inFrontmatter = lines[0]?.trim() === "---";
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index].trim();
+    if (inFrontmatter) {
+      if (index > 0 && line === "---") inFrontmatter = false;
+      continue;
+    }
+    if (!line || /^%%/u.test(line)) continue;
+    return /^block(?:-beta)?(?:\s|$)/iu.test(line);
+  }
+  return false;
+}
+
 export function prepareMermaidCode(code: string) {
-  return code.split("\n").map(prepareSubgraphLabel).join("\n");
+  const lines = code.split("\n");
+  const blockDiagram = isBlockDiagram(lines);
+  return lines
+    .map((line) => {
+      const prepared = prepareSubgraphLabel(line);
+      return blockDiagram ? prepareBlockLabel(prepared) : prepared;
+    })
+    .join("\n");
 }
 
 export function getMermaidConfig(dark: boolean): MermaidConfig {
@@ -69,6 +147,9 @@ export function getMermaidConfig(dark: boolean): MermaidConfig {
     mindmap: {
       useMaxWidth: true,
       maxNodeWidth: MERMAID_LABEL_WRAP_WIDTH,
+    },
+    block: {
+      useMaxWidth: true,
     },
   };
 }
