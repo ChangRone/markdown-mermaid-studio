@@ -139,6 +139,12 @@ export function getMermaidConfig(dark: boolean): MermaidConfig {
       wrap: true,
       wrapPadding: 12,
     },
+    journey: {
+      useMaxWidth: true,
+      width: 180,
+      height: 72,
+      taskFontSize: 14,
+    },
     c4: {
       useMaxWidth: true,
       wrap: true,

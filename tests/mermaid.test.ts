@@ -15,6 +15,9 @@ test("production Mermaid config enables supported long-label wrapping", () => {
   assert.equal(light.flowchart?.wrappingWidth, MERMAID_LABEL_WRAP_WIDTH);
   assert.equal(light.sequence?.wrap, true);
   assert.equal(light.sequence?.wrapPadding, 12);
+  assert.equal(light.journey?.width, 180);
+  assert.equal(light.journey?.height, 72);
+  assert.equal(light.journey?.taskFontSize, 14);
   assert.equal(light.c4?.wrap, true);
   assert.equal(light.mindmap?.maxNodeWidth, MERMAID_LABEL_WRAP_WIDTH);
   assert.equal(light.block?.useMaxWidth, true);
