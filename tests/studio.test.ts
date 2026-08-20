@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { DIAGRAM_TEMPLATES } from "../lib/templates";
+import { getMermaidConfig, prepareMermaidCode } from "../lib/mermaid";
 import {
   MAX_PINNED_SNAPSHOTS,
   MAX_SNAPSHOTS,
@@ -212,14 +213,10 @@ test("every Mermaid catalog example passes the production parser", async () => {
     Object.defineProperty(globalThis, key, { value, configurable: true });
   }
   const mermaid = (await import("mermaid")).default;
-  mermaid.initialize({
-    startOnLoad: false,
-    securityLevel: "strict",
-    suppressErrorRendering: true,
-  });
+  mermaid.initialize(getMermaidConfig(false));
   for (const template of DIAGRAM_TEMPLATES) {
     await assert.doesNotReject(
-      () => mermaid.parse(template.code),
+      () => mermaid.parse(prepareMermaidCode(template.code)),
       `invalid Mermaid template: ${template.id}`,
     );
   }

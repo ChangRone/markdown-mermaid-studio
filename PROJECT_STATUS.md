@@ -1,7 +1,7 @@
 # Project Status
 
-更新日期：2026-08-11
-目前版本：v0.5.0
+更新日期：2026-08-20
+目前版本：v0.5.1
 發布分支：`main`
 正式路徑：`/markdown-mermaid-studio/`
 
@@ -11,7 +11,8 @@
 |---|---|---|
 | Markdown 匯入／輸出 | DONE | 支援常用文字副檔名，輸出單一 `.md` |
 | 即時編輯與預覽 | DONE | 編輯後立即更新 CommonMark／GFM／數學公式／frontmatter |
-| Mermaid 語法與目錄 | DONE | Mermaid 11.16.1 核心 29 種範本全部通過 production parser |
+| Mermaid 語法與目錄 | DONE | Mermaid 11.17.0 核心 29 種範本全部通過 production parser |
+| Mermaid 長文字 | DONE | Flowchart 節點／連線／群組與 Sequence 參與者／訊息／備註會在合理寬度換行 |
 | Mermaid 錯誤定位 | DONE | 顯示實際來源行並能直接跳轉 |
 | Mermaid 輸出 | DONE | 每張圖可輸出 SVG、PNG及複製原始碼 |
 | 雙向定位 | DONE | Source 游標→Preview；Preview 點選→Source 精確行 |

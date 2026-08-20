@@ -32,6 +32,7 @@ import MarkdownPreview from "@/components/MarkdownPreview";
 import SearchPanel from "@/components/SearchPanel";
 import SnapshotCompareDialog from "@/components/SnapshotCompareDialog";
 import SyntaxCatalog from "@/components/SyntaxCatalog";
+import { getMermaidConfig, prepareMermaidCode } from "@/lib/mermaid";
 import packageInfo from "../package.json";
 import {
   STARTER_DOCUMENT,
@@ -246,15 +247,11 @@ export default function Home() {
     }
     try {
       const mermaid = (await import("mermaid")).default;
-      mermaid.initialize({
-        startOnLoad: false,
-        securityLevel: "strict",
-        suppressErrorRendering: true,
-      });
+      mermaid.initialize(getMermaidConfig(dark));
       const results: MermaidCheck[] = [];
       for (const block of blocks) {
         try {
-          await mermaid.parse(block.code);
+          await mermaid.parse(prepareMermaidCode(block.code));
           results.push({ index: block.index, line: block.codeLine, ok: true, message: "語法正確" });
         } catch (reason) {
           const details = mermaidErrorDetails(reason, block);
@@ -265,7 +262,7 @@ export default function Home() {
     } finally {
       setChecking(false);
     }
-  }, [markdown]);
+  }, [dark, markdown]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void runChecks(), 600);

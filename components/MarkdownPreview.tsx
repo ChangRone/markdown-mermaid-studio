@@ -25,6 +25,7 @@ import remarkBreaks from "remark-breaks";
 import remarkFrontmatter from "remark-frontmatter";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
+import { getMermaidConfig, prepareMermaidCode } from "@/lib/mermaid";
 import { extractMermaidBlocks, parseFrontmatter } from "@/lib/studio";
 
 type MarkdownNode = ExtraProps["node"];
@@ -116,16 +117,11 @@ function MermaidDiagram({
     const draw = async () => {
       try {
         const mermaid = (await import("mermaid")).default;
-        mermaid.initialize({
-          startOnLoad: false,
-          securityLevel: "strict",
-          theme: dark ? "dark" : "neutral",
-          fontFamily: "Inter, Noto Sans TC, system-ui, sans-serif",
-          suppressErrorRendering: true,
-        });
-        await mermaid.parse(code);
+        const renderCode = prepareMermaidCode(code);
+        mermaid.initialize(getMermaidConfig(dark));
+        await mermaid.parse(renderCode);
         const id = `diagram-${rawId.replace(/[^a-zA-Z0-9]/g, "")}-${Date.now()}`;
-        const rendered = await mermaid.render(id, code);
+        const rendered = await mermaid.render(id, renderCode);
         if (active && targetRef.current) {
           targetRef.current.innerHTML = rendered.svg;
           setSvg(rendered.svg);

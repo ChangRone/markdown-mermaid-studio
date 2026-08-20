@@ -655,5 +655,5 @@ export function parseFrontmatter(markdown: string) {
 }
 
 export function buildAiPrompt(markdown: string) {
-  return `請檢查並完善以下 Markdown 文件。要求：\n1. 保留原意與資訊，不自行補造事實。\n2. 檢查標題層級、表格、清單、連結、frontmatter 與數學公式。\n3. 修正 Mermaid 語法，並維持 Mermaid 11.16.1 相容。\n4. 先列出修改建議與風險，再提供完整修正版。\n5. 使用 diff 摘要說明每一項變更。\n\n---文件開始---\n${markdown}\n---文件結束---`;
+  return `請檢查並完善以下 Markdown 文件。要求：\n1. 保留原意與資訊，不自行補造事實。\n2. 檢查標題層級、表格、清單、連結、frontmatter 與數學公式。\n3. 修正 Mermaid 語法，並維持 Mermaid 11.17.0 相容。\n4. 先列出修改建議與風險，再提供完整修正版。\n5. 使用 diff 摘要說明每一項變更。\n\n---文件開始---\n${markdown}\n---文件結束---`;
 }
