@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.5.3 - 2026-08-26
+
+### Fixed
+
+- Mermaid 11.17.0 在 HiDPI、非整數縮放或瀏覽器縮放下，因標籤測量寬度帶有小數誤差而未啟用換行，造成 `控制程式：platform_checker.sh` 與 `Gitea：Tag、Commit、Manifest` 等 Flowchart 文字遭邊界裁切。
+- PNG 匯出以 Blob URL 載入含 `foreignObject` 的 SVG 時，部分瀏覽器會將 Canvas 判定為已污染而拒絕 `toBlob()`。
+- SVG 使用百分比寬度時，PNG 尺寸可能未依 `viewBox` 比例計算。
+
+### Changed
+
+- 對 Mermaid 標籤的寬度比較加入 1px 浮點容差，並以小數寬度回歸測試涵蓋一般、圓角、菱形與資料庫 Flowchart 節點。
+- PNG 改用自包含 SVG data URI，依 `viewBox` 明確設定來源尺寸、維持比例並限制最大邊長 4096px；瀏覽器安全限制會顯示可理解的錯誤訊息。
+
 ## 0.5.2 - 2026-08-20
 
 ### Fixed

@@ -25,6 +25,7 @@ import remarkBreaks from "remark-breaks";
 import remarkFrontmatter from "remark-frontmatter";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
+import { svgToPng } from "@/lib/mermaid-export";
 import { getMermaidConfig, prepareMermaidCode } from "@/lib/mermaid";
 import { extractMermaidBlocks, parseFrontmatter } from "@/lib/studio";
 
@@ -54,39 +55,6 @@ function downloadBlob(blob: Blob, filename: string) {
   link.download = filename;
   link.click();
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
-}
-
-async function svgToPng(svg: string, dark: boolean) {
-  const svgBlob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
-  const url = URL.createObjectURL(svgBlob);
-  try {
-    const image = new Image();
-    image.decoding = "async";
-    await new Promise<void>((resolve, reject) => {
-      image.onload = () => resolve();
-      image.onerror = () => reject(new Error("SVG 圖片載入失敗"));
-      image.src = url;
-    });
-    const width = Math.max(320, Math.min(4096, image.naturalWidth || 1200));
-    const height = Math.max(180, Math.min(4096, image.naturalHeight || 700));
-    const scale = Math.min(2, 4096 / Math.max(width, height));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.round(width * scale);
-    canvas.height = Math.round(height * scale);
-    const context = canvas.getContext("2d");
-    if (!context) throw new Error("瀏覽器無法建立圖片畫布");
-    context.fillStyle = dark ? "#191c20" : "#ffffff";
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    context.drawImage(image, 0, 0, canvas.width, canvas.height);
-    return await new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob(
-        (blob) => (blob ? resolve(blob) : reject(new Error("PNG 轉換失敗"))),
-        "image/png",
-      );
-    });
-  } finally {
-    URL.revokeObjectURL(url);
-  }
 }
 
 function MermaidDiagram({

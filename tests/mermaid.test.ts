@@ -109,6 +109,33 @@ test("prepared long-label diagrams remain valid Mermaid", async () => {
       return (this.textContent ?? "").length * 8;
     },
   });
+  Object.defineProperty(dom.window.HTMLElement.prototype, "getBoundingClientRect", {
+    configurable: true,
+    value(this: HTMLElement) {
+      const textWidth = Array.from(this.textContent ?? "").reduce(
+        (width, character) => width + (/[^\u0000-\u00ff]/u.test(character) ? 16 : 8),
+        0,
+      );
+      const configuredMaxWidth = Number.parseFloat(this.style.maxWidth);
+      const maxWidth = Number.isFinite(configuredMaxWidth) ? configuredMaxWidth : textWidth;
+      const clamped = Number.isFinite(configuredMaxWidth) && textWidth > maxWidth;
+      const wrapping = clamped && this.style.whiteSpace !== "nowrap";
+      const width = clamped ? maxWidth : textWidth;
+      const measuredWidth = clamped && !wrapping ? maxWidth + 0.0078125 : width;
+      const height = wrapping ? Math.ceil(textWidth / maxWidth) * 24 : 24;
+      return {
+        x: 0,
+        y: 0,
+        width: measuredWidth,
+        height,
+        top: 0,
+        right: measuredWidth,
+        bottom: height,
+        left: 0,
+        toJSON: () => ({}),
+      };
+    },
+  });
 
   const mermaid = (await import("mermaid")).default;
   mermaid.initialize(getMermaidConfig(false));
@@ -119,6 +146,10 @@ test("prepared long-label diagrams remain valid Mermaid", async () => {
         A[這是一段很長的節點文字，用來確認節點也能自動換行並完整顯示]
         CHECKER["控制程式：platform_checker.sh"]
         GITEA["Gitea：Tag、Commit、Manifest"]
+        ROUNDED("圓角節點：platform_checker.sh")
+        DECISION{"判斷節點：Gitea、Tag、Commit、Manifest"}
+        STORE[("資料節點：platform_checker.sh")]
+        SHORT["Short"]
       end`,
     `sequenceDiagram
       participant A as 這是一個名稱很長的申請端系統需要自動換行
@@ -137,6 +168,26 @@ test("prepared long-label diagrams remain valid Mermaid", async () => {
   assert.match(rendered.svg, /overflow-wrap:\s*anywhere/u);
   assert.match(rendered.svg, /platform_checker\.sh/u);
   assert.match(rendered.svg, /Gitea：Tag、Commit、Manifest/u);
+
+  const holder = dom.window.document.createElement("div");
+  holder.innerHTML = rendered.svg;
+  const labels = [...holder.querySelectorAll<HTMLElement>(".nodeLabel")];
+  for (const expected of [
+    "控制程式：platform_checker.sh",
+    "Gitea：Tag、Commit、Manifest",
+    "圓角節點：platform_checker.sh",
+    "判斷節點：Gitea、Tag、Commit、Manifest",
+    "資料節點：platform_checker.sh",
+  ]) {
+    const label = labels.find((candidate) => candidate.textContent === expected);
+    assert.ok(label, `missing rendered label: ${expected}`);
+    const container = label.parentElement;
+    assert.equal(container?.style.whiteSpace, "break-spaces");
+    assert.equal(container?.style.width, `${MERMAID_LABEL_WRAP_WIDTH}px`);
+    assert.equal(container?.parentElement?.getAttribute("height"), "48");
+  }
+  const shortLabel = labels.find((candidate) => candidate.textContent === "Short");
+  assert.equal(shortLabel?.parentElement?.style.whiteSpace, "nowrap");
 });
 
 test("Block diagrams render without serializing circular DOM nodes", async () => {

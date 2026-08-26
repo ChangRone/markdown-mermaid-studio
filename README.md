@@ -4,7 +4,7 @@
 
 **線上使用：** [GitHub Pages](https://changrone.github.io/markdown-mermaid-studio/)
 
-## v0.5.2 功能
+## v0.5.3 功能
 
 - `.md`／`.markdown`／`.mdown`／`.mkd`／`.txt` 匯入，統一下載為 UTF-8 `.md`
 - 多文件工作區、複製／刪除、每份文件最多 20 份本機版本快照與安全還原
@@ -18,8 +18,8 @@
 - 文字搜尋、上一筆／下一筆、區分大小寫、逐筆與全部取代
 - CommonMark、GFM、frontmatter、註腳、數學公式與安全的外部連結預覽
 - Mermaid 11.17.0 即時渲染、精確錯誤行、29 種核心圖表範本與官方文件入口
-- 流程圖節點／連線與長 `subgraph` 標題自動換行；循序圖參與者／訊息／備註與 Block 長 shape label 自動換行；Journey 長任務不裁切
-- 每張 Mermaid 圖可縮放、複製原始碼、下載 SVG 或 PNG
+- 流程圖節點／連線與長 `subgraph` 標題自動換行，包含 HiDPI 與非整數瀏覽器縮放；循序圖參與者／訊息／備註與 Block 長 shape label 自動換行；Journey 長任務不裁切
+- 每張 Mermaid 圖可縮放、複製原始碼、下載 SVG 或維持 `viewBox` 比例的 PNG
 - 文件結構、標題、圖片替代文字與 Mermaid 健檢
 - 規則修正前後比較、選擇套用、自動建立還原快照
 - 一鍵複製完整 AI 完善提示，不自動傳送文件
@@ -56,7 +56,7 @@ npm run dev
 npm test
 ```
 
-驗證包含 ESLint、純函式單元測試、長文字換行與 Block 實際 render 回歸測試、全部 Mermaid 範本解析、雙向定位 source map、GitHub Pages build 與靜態資源 smoke test。
+驗證包含 ESLint、純函式單元測試、小數寬度長文字換行、PNG data URI／比例與 Block 實際 render 回歸測試、全部 Mermaid 範本解析、雙向定位 source map、GitHub Pages build 與靜態資源 smoke test。
 
 ## GitHub Pages 部署
 
