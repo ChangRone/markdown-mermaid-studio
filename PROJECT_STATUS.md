@@ -28,8 +28,9 @@
 | 隱私與安全 | DONE | 無登入／DB／自動外傳；raw HTML 關閉；Mermaid strict |
 | 可重現部署 | DONE | lockfile、`npm ci`、Node 24 Actions |
 | 品質關卡 | DONE | lint、unit、Block render、29 Mermaid templates、source map、Pages smoke |
-| 自動發布 | DONE | `main` 通過全部關卡後自動發布 GitHub Pages |
+| 自動發布 | DONE | `main` 通過全部關卡後自動發布 Studio 與 `developer_guide.html` 至 GitHub Pages |
 | 相容更新 | DONE | 每月更新相容依賴，測試成功後才更新 `main` |
+| 五文件單頁發布 | DONE | 固定順序、唯一 Anchor、跨 MD 連結驗證、Mermaid SVG 預渲染及 Pandoc 單檔 HTML 均有實際建置證據 |
 
 ## 有意保留的邊界
 
@@ -38,6 +39,7 @@
 - ZenUML 需要額外外部 Mermaid plug-in，因此不列入目前 29 種核心內建圖表。
 - AI 語意改寫採「複製提示後由使用者選擇工具」，不在網站內保存 API Key 或自動上傳文件。
 - 多人雲端協作、帳號同步與伺服器資料庫不屬於本機優先 v0.5 範圍。
+- `developer_guide.html` 是建置產物；修改來源 MD 後必須重新執行 `npm run guide:build`，不會由瀏覽器工作區自動更新。
 
 ## Definition of Done
 

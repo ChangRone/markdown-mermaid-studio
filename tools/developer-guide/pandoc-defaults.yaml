@@ -1,0 +1,13 @@
+from: gfm+attributes
+to: html5
+standalone: true
+embed-resources: true
+toc: true
+toc-depth: 3
+section-divs: true
+css:
+  - tools/developer-guide/guide.css
+metadata:
+  title: Markdown Mermaid Studio Developer Guide
+  lang: zh-Hant
+

@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- 新增固定五份 Markdown 的 Developer Guide Builder，依 `guide-order.txt` 合併成 `all.md`，並把跨文件連結改寫為全域唯一的頁內 Anchor。
+- 新增 Mermaid 11.17.0 SVG 預渲染、失效連結阻擋、Pandoc standalone／embed-resources 單頁輸出，以及 Windows、Linux/macOS 建置入口。
+- 新增五章 Markdown Mermaid Studio 使用與長期維護文件，輸出為可離線開啟的 `developer_guide.html`。
+- GitHub Pages workflow 會安裝 Pandoc、建置並驗證 `developer_guide.html`，與 Studio 同步發布。
+
 ## 0.5.3 - 2026-08-26
 
 ### Fixed

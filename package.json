@@ -9,9 +9,11 @@
     "dev": "next dev",
     "build": "next build",
     "build:pages": "next build",
+    "guide:build": "node --import tsx tools/developer-guide/build-guide.mjs",
+    "guide:pages": "node --import tsx tools/developer-guide/build-guide.mjs --output out/developer_guide.html",
     "postinstall": "patch-package",
     "start": "next start",
-    "test": "npm run lint && npm run test:unit && npm run build:pages && npm run test:pages",
+    "test": "npm run lint && npm run test:unit && npm run build:pages && npm run guide:pages && npm run test:pages",
     "test:unit": "node --import tsx --test tests/*.test.ts tests/*.test.tsx",
     "test:pages": "node --test tests/pages-smoke.test.mjs",
     "lint": "eslint . --ignore-pattern .next --ignore-pattern out"

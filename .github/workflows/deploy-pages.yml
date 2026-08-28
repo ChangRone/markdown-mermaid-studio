@@ -31,6 +31,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install Pandoc
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends pandoc
+
       - name: Lint
         run: npm run lint
 
@@ -39,6 +44,9 @@ jobs:
 
       - name: Build static site
         run: npm run build:pages
+
+      - name: Build standalone Developer Guide
+        run: npm run guide:pages
 
       - name: Pages smoke tests
         run: npm run test:pages

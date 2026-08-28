@@ -1,0 +1,7 @@
+# Developer Guide 固定合併順序；只允許五份 Markdown。
+docs/developer-guide/01_overview.md
+docs/developer-guide/02_workspace.md
+docs/developer-guide/03_mermaid.md
+docs/developer-guide/04_publish.md
+docs/developer-guide/05_maintenance.md
+

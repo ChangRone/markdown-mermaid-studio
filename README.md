@@ -4,6 +4,8 @@
 
 **線上使用：** [GitHub Pages](https://changrone.github.io/markdown-mermaid-studio/)
 
+**完整功能指南：** [Developer Guide](https://changrone.github.io/markdown-mermaid-studio/developer_guide.html)
+
 ## v0.5.3 功能
 
 - `.md`／`.markdown`／`.mdown`／`.mkd`／`.txt` 匯入，統一下載為 UTF-8 `.md`
@@ -60,10 +62,29 @@ npm test
 
 ## GitHub Pages 部署
 
-推送到 `main` 後，GitHub Actions 會依序執行 lint、單元測試、靜態 build、Pages smoke test，全部通過後才部署到：
+推送到 `main` 後，GitHub Actions 會依序安裝鎖定依賴與 Pandoc、執行 lint、單元測試、Studio 靜態 build、Developer Guide 單頁 build 及 Pages smoke test，全部通過後才部署到：
 
 `https://changrone.github.io/markdown-mermaid-studio/`
+
+Developer Guide 同步發布到：
+
+`https://changrone.github.io/markdown-mermaid-studio/developer_guide.html`
 
 依賴由 `package-lock.json` 鎖定並使用 `npm ci`。每月排程只更新目前 major 範圍內的相容版本；完整測試成功後才直接更新 `main`，不建立額外發布分支。
 
 詳細狀態與驗收標準請見 [PROJECT_STATUS.md](./PROJECT_STATUS.md)，版本變更請見 [CHANGELOG.md](./CHANGELOG.md)。
+
+## 五份 Markdown 發布成單一 HTML
+
+`guide-order.txt` 固定列出五份來源文件。建置器會依序合併、為每份文件建立唯一 Anchor、改寫跨 MD 連結、驗證失效目標，並以目前 Studio 的 Mermaid 11.17.0 設定預先渲染 SVG。Pandoc 最後將目錄、CSS 與圖形嵌入單一網頁：
+
+```bash
+npm run guide:build
+```
+
+輸出：
+
+- `build/developer-guide/all.md`：可檢查的合併中間檔。
+- `dist/developer_guide.html`：可離線開啟的單一網頁。
+
+Windows 可執行 `scripts/build-guide.ps1`；Linux/macOS 可執行 `scripts/build-guide.sh`。Windows 沒有管理員權限時，可把 Pandoc Portable 放在 `tools/pandoc/pandoc.exe`。來源與固定順序請見 [`docs/developer-guide`](./docs/developer-guide) 及 [`guide-order.txt`](./guide-order.txt)。
