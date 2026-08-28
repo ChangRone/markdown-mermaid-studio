@@ -6,9 +6,10 @@
 
 **完整功能指南：** [Developer Guide](https://changrone.github.io/markdown-mermaid-studio/developer_guide.html)
 
-## v0.5.3 功能
+## v0.6.0 功能
 
 - `.md`／`.markdown`／`.mdown`／`.mkd`／`.txt` 匯入，統一下載為 UTF-8 `.md`
+- 網頁「多檔合併」可一次選取最多 50 份文件、調整順序、驗證跨 MD Anchor、預覽並下載 `all.md` 或獨立 HTML
 - 多文件工作區、複製／刪除、每份文件最多 20 份本機版本快照與安全還原
 - 快照自訂名稱、最多 5 個標籤、重新命名、搜尋、刪除與單獨下載 Markdown
 - 最多釘選 5 份重要快照；達上限自動整理時優先保留
@@ -74,7 +75,20 @@ Developer Guide 同步發布到：
 
 詳細狀態與驗收標準請見 [PROJECT_STATUS.md](./PROJECT_STATUS.md)，版本變更請見 [CHANGELOG.md](./CHANGELOG.md)。
 
-## 五份 Markdown 發布成單一 HTML
+## 在網頁合併多份 Markdown
+
+不需安裝 Node.js 或 Pandoc，直接開啟線上 Studio：
+
+1. 點擊頂端「多檔合併」。
+2. 點擊「選擇多份 MD」，一次選取需要合併的文件。
+3. 使用上移、下移及移除按鈕確認文件順序。
+4. 設定網頁標題與 HTML 檔名。
+5. 確認畫面顯示「連結檢查通過」，再點擊「檢查連結並預覽」。
+6. 下載「合併 MD」或包含目錄、CSS 與 Mermaid SVG 的「單頁 HTML」。
+
+系統會把 `other.md#章節` 改成單頁 Anchor；缺少文件、缺少標題 Anchor 或重複檔名時會阻止輸出。外部網址保持不變。本機圖片不會自動上傳或嵌入，畫面會列出警告。
+
+## 專案內固定五份 Markdown 發布
 
 `guide-order.txt` 固定列出五份來源文件。建置器會依序合併、為每份文件建立唯一 Anchor、改寫跨 MD 連結、驗證失效目標，並以目前 Studio 的 Mermaid 11.17.0 設定預先渲染 SVG。Pandoc 最後將目錄、CSS 與圖形嵌入單一網頁：
 
@@ -88,3 +102,5 @@ npm run guide:build
 - `dist/developer_guide.html`：可離線開啟的單一網頁。
 
 Windows 可執行 `scripts/build-guide.ps1`；Linux/macOS 可執行 `scripts/build-guide.sh`。Windows 沒有管理員權限時，可把 Pandoc Portable 放在 `tools/pandoc/pandoc.exe`。來源與固定順序請見 [`docs/developer-guide`](./docs/developer-guide) 及 [`guide-order.txt`](./guide-order.txt)。
+
+這是維護專案內建 Developer Guide 的可重現發布管線；一般使用者合併自己的文件，請使用網頁上的「多檔合併」。

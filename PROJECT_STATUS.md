@@ -1,7 +1,7 @@
 # Project Status
 
-更新日期：2026-08-26
-目前版本：v0.5.3
+更新日期：2026-08-28
+目前版本：v0.6.0
 發布分支：`main`
 正式路徑：`/markdown-mermaid-studio/`
 
@@ -31,6 +31,7 @@
 | 自動發布 | DONE | `main` 通過全部關卡後自動發布 Studio 與 `developer_guide.html` 至 GitHub Pages |
 | 相容更新 | DONE | 每月更新相容依賴，測試成功後才更新 `main` |
 | 五文件單頁發布 | DONE | 固定順序、唯一 Anchor、跨 MD 連結驗證、Mermaid SVG 預渲染及 Pandoc 單檔 HTML 均有實際建置證據 |
+| 瀏覽器多檔合併 | DONE | 多檔選取、排序、Anchor／失效連結檢查、Mermaid SVG 預覽、`all.md` 與獨立 HTML 下載皆由網頁完成 |
 
 ## 有意保留的邊界
 
@@ -39,7 +40,8 @@
 - ZenUML 需要額外外部 Mermaid plug-in，因此不列入目前 29 種核心內建圖表。
 - AI 語意改寫採「複製提示後由使用者選擇工具」，不在網站內保存 API Key 或自動上傳文件。
 - 多人雲端協作、帳號同步與伺服器資料庫不屬於本機優先 v0.5 範圍。
-- `developer_guide.html` 是建置產物；修改來源 MD 後必須重新執行 `npm run guide:build`，不會由瀏覽器工作區自動更新。
+- 正式站內建的 `developer_guide.html` 仍是專案建置產物；使用者自己的多份文件則可由網頁「多檔合併」獨立產生，不會更新正式站指南。
+- 只選取 Markdown 時無法取得電腦上的相對圖片檔；輸出前會列出本機圖片警告，外部網址與 data URI 圖片維持可用。
 
 ## Definition of Done
 

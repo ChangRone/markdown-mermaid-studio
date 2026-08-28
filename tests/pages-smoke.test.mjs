@@ -9,11 +9,12 @@ const output = path.join(root, "out");
 const htmlPath = path.join(output, "index.html");
 const guidePath = path.join(output, "developer_guide.html");
 
-test("Pages export contains the v0.5.3 snapshot workspace shell", () => {
+test("Pages export contains the v0.6.0 multi-document workspace shell", () => {
   assert.ok(existsSync(htmlPath), "out/index.html should exist after next build");
   const html = readFileSync(htmlPath, "utf8");
   assert.match(html, /<title>Markdown Mermaid Studio<\/title>/);
-  assert.match(html, /v(?:<!-- -->)?0\.5\.3/);
+  assert.match(html, /v(?:<!-- -->)?0\.6\.0/);
+  assert.match(html, /多檔合併/);
   assert.match(html, /雙向定位/);
   assert.match(html, /完整語法/);
   assert.match(html, /文件健檢/);

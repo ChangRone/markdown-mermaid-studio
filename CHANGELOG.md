@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.6.0 - 2026-08-28
 
 ### Added
 
@@ -8,6 +8,9 @@
 - 新增 Mermaid 11.17.0 SVG 預渲染、失效連結阻擋、Pandoc standalone／embed-resources 單頁輸出，以及 Windows、Linux/macOS 建置入口。
 - 新增五章 Markdown Mermaid Studio 使用與長期維護文件，輸出為可離線開啟的 `developer_guide.html`。
 - GitHub Pages workflow 會安裝 Pandoc、建置並驗證 `developer_guide.html`，與 Studio 同步發布。
+- 新增網頁「多檔合併」操作視窗，可多選、排序與移除文件，設定標題及輸出檔名。
+- 瀏覽器端會建立唯一 Anchor、改寫同檔與跨 MD 連結、阻擋失效目標，並提供 `all.md` 下載。
+- 單頁預覽會以 Mermaid 11.17.0 預先渲染內嵌 SVG，下載的 HTML 不需要 Pandoc、Node.js、伺服器或網路連線。
 
 ## 0.5.3 - 2026-08-26
 

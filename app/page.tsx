@@ -8,6 +8,7 @@ import {
   Clipboard,
   Download,
   FileCode2,
+  FileStack,
   Files,
   FileUp,
   Lightbulb,
@@ -29,6 +30,7 @@ import {
 } from "react";
 import DocumentDrawer from "@/components/DocumentDrawer";
 import MarkdownPreview from "@/components/MarkdownPreview";
+import MultiDocumentExportDialog from "@/components/MultiDocumentExportDialog";
 import SearchPanel from "@/components/SearchPanel";
 import SnapshotCompareDialog from "@/components/SnapshotCompareDialog";
 import SyntaxCatalog from "@/components/SyntaxCatalog";
@@ -82,6 +84,7 @@ export default function Home() {
   const [mode, setMode] = useState<DisplayMode>("split");
   const [assistantOpen, setAssistantOpen] = useState(true);
   const [documentsOpen, setDocumentsOpen] = useState(false);
+  const [mergeOpen, setMergeOpen] = useState(false);
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -623,8 +626,9 @@ export default function Home() {
           <button className="icon-button" onClick={() => setDark((value) => !value)} aria-label={dark ? "切換淺色模式" : "切換深色模式"}>
             {dark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
-          <button className="button secondary" onClick={() => fileInputRef.current?.click()}><FileUp size={17} />匯入 MD</button>
-          <button className="button primary" onClick={download}><Download size={17} />下載 MD</button>
+          <button className="button secondary" onClick={() => setMergeOpen(true)} aria-label="多檔合併" title="多檔合併"><FileStack size={17} />多檔合併</button>
+          <button className="button secondary" onClick={() => fileInputRef.current?.click()} aria-label="匯入 MD" title="匯入 MD"><FileUp size={17} />匯入 MD</button>
+          <button className="button primary" onClick={download} aria-label="下載 MD" title="下載 MD"><Download size={17} />下載 MD</button>
           <input ref={fileInputRef} type="file" accept=".md,.markdown,.mdown,.mkd,.txt,text/markdown,text/plain" hidden onChange={(event) => void handleFile(event.target.files?.[0])} />
         </div>
       </header>
@@ -825,6 +829,12 @@ export default function Home() {
         onImportWorkspace={(file) => void importWorkspace(file)}
       />
       <SyntaxCatalog open={catalogOpen} onClose={() => setCatalogOpen(false)} onInsert={insertText} />
+      <MultiDocumentExportDialog
+        open={mergeOpen}
+        dark={dark}
+        onClose={() => setMergeOpen(false)}
+        onNotify={notify}
+      />
       <SnapshotCompareDialog
         snapshot={snapshotCompare}
         currentContent={markdown}
