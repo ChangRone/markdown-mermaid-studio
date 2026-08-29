@@ -9,17 +9,32 @@ const output = path.join(root, "out");
 const htmlPath = path.join(output, "index.html");
 const guidePath = path.join(output, "developer_guide.html");
 
-test("Pages export contains the v0.6.0 multi-document workspace shell", () => {
+test("Pages export contains the v0.6.1 multi-document workspace shell", () => {
   assert.ok(existsSync(htmlPath), "out/index.html should exist after next build");
   const html = readFileSync(htmlPath, "utf8");
   assert.match(html, /<title>Markdown Mermaid Studio<\/title>/);
-  assert.match(html, /v(?:<!-- -->)?0\.6\.0/);
+  assert.match(html, /v(?:<!-- -->)?0\.6\.1/);
   assert.match(html, /多檔合併/);
+  assert.match(html, /合併多份 MD/);
   assert.match(html, /雙向定位/);
   assert.match(html, /完整語法/);
   assert.match(html, /文件健檢/);
   assert.match(html, /管理版本快照/);
   assert.match(html, /favicon\.svg/);
+});
+
+test("mobile Pages assets expose a visible multi-document merge action", () => {
+  const html = readFileSync(htmlPath, "utf8");
+  const cssRefs = [...html.matchAll(/href="([^"]+\.css)"/g)].map((match) => match[1]);
+  const css = cssRefs
+    .map((reference) => reference.replace(/^\/markdown-mermaid-studio\//, "").replace(/^\//, ""))
+    .map((relative) => readFileSync(path.join(output, relative), "utf8"))
+    .join("\n");
+
+  assert.match(html, /aria-label="合併多份 Markdown 文件"/u);
+  assert.match(css, /\.mobile-merge-action/u);
+  assert.match(css, /min-height:\s*48px/u);
+  assert.match(css, /@media\s*\(max-width:\s*760px\)/u);
 });
 
 test("every local JavaScript and CSS asset referenced by the page exists", () => {

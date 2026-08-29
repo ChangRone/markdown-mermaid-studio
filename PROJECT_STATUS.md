@@ -1,7 +1,7 @@
 # Project Status
 
-更新日期：2026-08-28
-目前版本：v0.6.0
+更新日期：2026-08-29
+目前版本：v0.6.1
 發布分支：`main`
 正式路徑：`/markdown-mermaid-studio/`
 
@@ -24,7 +24,7 @@
 | 搜尋與取代 | DONE | 上下筆、大小寫、逐筆與全部取代 |
 | 文件完善輔助 | DONE | 規則健檢、修改前後比較、選擇套用、AI 提示複製 |
 | 深淺色與版面偏好 | DONE | 重新整理後保留主題、模式、欄寬與定位開關 |
-| 行動裝置 | DONE | 小螢幕並排模式改為上下配置，工具列可操作 |
+| 行動裝置 | DONE | 小螢幕並排模式改為上下配置；手機固定顯示「合併多份 MD」48px 觸控入口，通知不遮擋操作 |
 | 隱私與安全 | DONE | 無登入／DB／自動外傳；raw HTML 關閉；Mermaid strict |
 | 可重現部署 | DONE | lockfile、`npm ci`、Node 24 Actions |
 | 品質關卡 | DONE | lint、unit、Block render、29 Mermaid templates、source map、Pages smoke |

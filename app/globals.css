@@ -242,6 +242,7 @@ button { color: inherit; }
 .privacy-note span { color: var(--green); }
 
 .toast { position: fixed; right: 22px; bottom: 22px; z-index: 10; display: flex; align-items: center; gap: 8px; padding: 11px 14px; border-radius: 9px; color: white; background: #202328; box-shadow: 0 12px 32px rgba(0,0,0,.22); font-size: 11px; animation: rise .2s ease-out; }
+.mobile-merge-action { display: none; }
 @keyframes rise { from { opacity: 0; transform: translateY(7px); } }
 
 @media (max-width: 1040px) {
@@ -572,6 +573,30 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .top-actions { min-width: 0; }
   .top-actions .version-badge { display: none; }
   .top-actions .button { width: 34px; flex: 0 0 34px; padding: 0; overflow: hidden; font-size: 0; }
+  .mobile-merge-action {
+    position: fixed;
+    right: 12px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    z-index: 20;
+    min-width: 138px;
+    min-height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 16px;
+    border: 1px solid color-mix(in srgb, var(--accent) 72%, white);
+    border-radius: 999px;
+    color: white;
+    background: var(--accent);
+    box-shadow: 0 10px 28px rgba(160, 65, 27, .34);
+    font-size: 12px;
+    font-weight: 750;
+    cursor: pointer;
+  }
+  .mobile-merge-action:active { transform: translateY(1px); }
+  .mobile-merge-action:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 32%, transparent); outline-offset: 3px; }
+  .toast { right: 12px; bottom: calc(max(12px, env(safe-area-inset-bottom)) + 58px); }
   .workspace { height: calc(100vh - 157px); }
   .assistant-pane { width: min(306px, calc(100vw - 14px)); }
   .main-stage.mode-split, .main-stage.mode-split.with-assistant {

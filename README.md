@@ -6,7 +6,7 @@
 
 **完整功能指南：** [Developer Guide](https://changrone.github.io/markdown-mermaid-studio/developer_guide.html)
 
-## v0.6.0 功能
+## v0.6.1 功能
 
 - `.md`／`.markdown`／`.mdown`／`.mkd`／`.txt` 匯入，統一下載為 UTF-8 `.md`
 - 網頁「多檔合併」可一次選取最多 50 份文件、調整順序、驗證跨 MD Anchor、預覽並下載 `all.md` 或獨立 HTML

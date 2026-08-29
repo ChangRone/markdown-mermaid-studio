@@ -804,6 +804,17 @@ export default function Home() {
         </div>
       </section>
 
+      <button
+        type="button"
+        className="mobile-merge-action"
+        onClick={() => setMergeOpen(true)}
+        aria-label="合併多份 Markdown 文件"
+        aria-expanded={mergeOpen}
+      >
+        <FileStack size={18} />
+        <span>合併多份 MD</span>
+      </button>
+
       <DocumentDrawer
         key={workspace.activeId}
         open={documentsOpen}
