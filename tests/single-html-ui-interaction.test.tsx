@@ -9,6 +9,16 @@ test("batch file input validates, reorders and removes selected Markdown files",
   const dom = new JSDOM("<!doctype html><html><body><div id=\"root\"></div></body></html>", {
     url: "https://example.test",
   });
+  let previewCounter = 0;
+  const revokedPreviewUrls: string[] = [];
+  Object.defineProperty(dom.window.URL, "createObjectURL", {
+    configurable: true,
+    value: () => `blob:https://example.test/preview-${++previewCounter}`,
+  });
+  Object.defineProperty(dom.window.URL, "revokeObjectURL", {
+    configurable: true,
+    value: (url: string) => revokedPreviewUrls.push(url),
+  });
   const previous: Record<string, PropertyDescriptor | undefined> = {};
   for (const [key, value] of Object.entries({
     window: dom.window,
@@ -17,6 +27,8 @@ test("batch file input validates, reorders and removes selected Markdown files",
     HTMLElement: dom.window.HTMLElement,
     Event: dom.window.Event,
     File: dom.window.File,
+    Blob: dom.window.Blob,
+    URL: dom.window.URL,
     IS_REACT_ACT_ENVIRONMENT: true,
   })) {
     previous[key] = Object.getOwnPropertyDescriptor(globalThis, key);
@@ -46,9 +58,23 @@ test("batch file input validates, reorders and removes selected Markdown files",
   assert.match(container.textContent || "", /連結檢查通過/u);
   assert.match(container.textContent || "", /改寫 1 個跨檔／頁內連結/u);
 
+  const preview = [...container.querySelectorAll<HTMLButtonElement>("button")]
+    .find((button) => button.textContent?.includes("檢查連結並預覽"));
+  assert.ok(preview);
+  await act(async () => {
+    preview.click();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  });
+  const iframe = container.querySelector<HTMLIFrameElement>('iframe[title="單頁 HTML 預覽"]');
+  assert.ok(iframe);
+  assert.equal(iframe.getAttribute("src"), "blob:https://example.test/preview-1");
+  assert.equal(iframe.hasAttribute("srcdoc"), false);
+  assert.equal(iframe.getAttribute("sandbox"), "");
+
   const down = container.querySelector<HTMLButtonElement>('button[aria-label="下移 first.md"]');
   assert.ok(down);
   await act(async () => down.click());
+  assert.deepEqual(revokedPreviewUrls, ["blob:https://example.test/preview-1"]);
   const namesAfterMove = [...container.querySelectorAll(".merge-source-item strong")].map((node) => node.textContent);
   assert.deepEqual(namesAfterMove, ["second.md", "first.md"]);
 

@@ -1,7 +1,7 @@
 # Project Status
 
-更新日期：2026-08-29
-目前版本：v0.6.1
+更新日期：2026-08-31
+目前版本：v0.6.2
 發布分支：`main`
 正式路徑：`/markdown-mermaid-studio/`
 
@@ -31,7 +31,7 @@
 | 自動發布 | DONE | `main` 通過全部關卡後自動發布 Studio 與 `developer_guide.html` 至 GitHub Pages |
 | 相容更新 | DONE | 每月更新相容依賴，測試成功後才更新 `main` |
 | 五文件單頁發布 | DONE | 固定順序、唯一 Anchor、跨 MD 連結驗證、Mermaid SVG 預渲染及 Pandoc 單檔 HTML 均有實際建置證據 |
-| 瀏覽器多檔合併 | DONE | 多檔選取、排序、Anchor／失效連結檢查、Mermaid SVG 預覽、`all.md` 與獨立 HTML 下載皆由網頁完成 |
+| 瀏覽器多檔合併 | DONE | 多檔選取、排序、Anchor／失效連結檢查、Mermaid SVG 預覽、`all.md` 與獨立 HTML 下載皆由網頁完成；合併預覽與重新匯入的 `all.md` 均可正確頁內跳轉 |
 
 ## 有意保留的邊界
 

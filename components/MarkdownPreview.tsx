@@ -31,6 +31,49 @@ import { extractMermaidBlocks, parseFrontmatter } from "@/lib/studio";
 
 type MarkdownNode = ExtraProps["node"];
 
+type MarkdownAstNode = {
+  type: string;
+  value?: string;
+  children?: MarkdownAstNode[];
+  data?: Record<string, unknown> & { hProperties?: Record<string, unknown> };
+};
+
+const GENERATED_ANCHOR = /^<a id="(doc-\d{2}-[\p{L}\p{N}-]+)"><\/a>$/u;
+
+function generatedAnchorValue(node: MarkdownAstNode) {
+  if (node.type === "html") return node.value;
+  if (node.type !== "paragraph" || !node.children?.length) return undefined;
+  if (node.children.some((child) => child.type !== "html" || typeof child.value !== "string")) {
+    return undefined;
+  }
+  return node.children.map((child) => child.value).join("");
+}
+
+function remarkGeneratedHeadingAnchors() {
+  return (tree: MarkdownAstNode) => {
+    const apply = (parent: MarkdownAstNode) => {
+      if (!parent.children) return;
+      const children: MarkdownAstNode[] = [];
+      for (let index = 0; index < parent.children.length; index += 1) {
+        const child = parent.children[index];
+        const match = generatedAnchorValue(child)?.match(GENERATED_ANCHOR);
+        const next = parent.children[index + 1];
+        if (match && next?.type === "heading") {
+          next.data = {
+            ...next.data,
+            hProperties: { ...next.data?.hProperties, id: match[1] },
+          };
+          continue;
+        }
+        apply(child);
+        children.push(child);
+      }
+      parent.children = children;
+    };
+    apply(tree);
+  };
+}
+
 type MarkdownPreviewProps = {
   markdown: string;
   dark: boolean;
@@ -286,9 +329,14 @@ export default function MarkdownPreview({
           </pre>
         );
       },
-      a: ({ href, children, ...props }) => (
-        <a href={href} target="_blank" rel="noreferrer" {...props}>{children}</a>
-      ),
+      a: ({ href, children, node, ...props }) => {
+        void node;
+        return href?.startsWith("#") ? (
+          <a href={href} {...props}>{children}</a>
+        ) : (
+          <a href={href} target="_blank" rel="noreferrer" {...props}>{children}</a>
+        );
+      },
     };
   }, [dark, mermaidBlocks, onJumpSource, onNotify]);
 
@@ -318,7 +366,7 @@ export default function MarkdownPreview({
         </section>
       )}
       <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkFrontmatter, remarkMath, remarkBreaks]}
+        remarkPlugins={[remarkGfm, remarkFrontmatter, remarkMath, remarkBreaks, remarkGeneratedHeadingAnchors]}
         rehypePlugins={[rehypeKatex]}
         components={components}
       >

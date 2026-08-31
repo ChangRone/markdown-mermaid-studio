@@ -13,7 +13,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   buildSingleHtml,
   MAX_MERGE_FILES,
@@ -63,15 +63,29 @@ export default function MultiDocumentExportDialog({
   const [filename, setFilename] = useState("developer_guide.html");
   const [building, setBuilding] = useState(false);
   const [buildError, setBuildError] = useState<{ key: string; message: string } | null>(null);
-  const [resultState, setResultState] = useState<{ key: string; build: SingleHtmlBuild } | null>(null);
+  const [resultState, setResultState] = useState<{ key: string; build: SingleHtmlBuild; previewUrl: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const previewUrlRef = useRef("");
   const prepared = useMemo(
     () => sources.length ? prepareSingleHtml(sources) : null,
     [sources],
   );
   const buildKey = `${dark ? "dark" : "light"}|${title}|${sources.map((source) => source.id).join("|")}`;
-  const result = resultState?.key === buildKey ? resultState.build : null;
+  const activeResult = resultState?.key === buildKey ? resultState : null;
+  const result = activeResult?.build ?? null;
   const visibleBuildError = buildError?.key === buildKey ? buildError.message : "";
+
+  const releasePreviewUrl = useCallback(() => {
+    if (!previewUrlRef.current) return;
+    URL.revokeObjectURL(previewUrlRef.current);
+    previewUrlRef.current = "";
+  }, []);
+
+  useEffect(() => {
+    if (resultState && resultState.key !== buildKey) releasePreviewUrl();
+  }, [buildKey, releasePreviewUrl, resultState]);
+
+  useEffect(() => releasePreviewUrl, [releasePreviewUrl]);
 
   if (!open) return null;
 
@@ -124,7 +138,10 @@ export default function MultiDocumentExportDialog({
     setBuildError(null);
     try {
       const next = await buildSingleHtml(sources, { title, dark });
-      setResultState({ key: buildKey, build: next });
+      const previewUrl = URL.createObjectURL(new Blob([next.html], { type: "text/html;charset=utf-8" }));
+      releasePreviewUrl();
+      previewUrlRef.current = previewUrl;
+      setResultState({ key: buildKey, build: next, previewUrl });
       onNotify(`單頁預覽完成：${next.summary.fileCount} 份文件、${next.summary.anchorCount} 個 Anchor`);
     } catch (reason) {
       setBuildError({ key: buildKey, message: reason instanceof Error ? reason.message : String(reason) });
@@ -134,9 +151,14 @@ export default function MultiDocumentExportDialog({
   };
 
   const canBuild = Boolean(sources.length && prepared && !prepared.errors.length && !building);
+  const close = () => {
+    releasePreviewUrl();
+    setResultState(null);
+    onClose();
+  };
 
   return (
-    <div className="merge-backdrop" role="presentation" onMouseDown={onClose}>
+    <div className="merge-backdrop" role="presentation" onMouseDown={close}>
       <section
         className="merge-dialog"
         role="dialog"
@@ -146,7 +168,7 @@ export default function MultiDocumentExportDialog({
       >
         <header>
           <div><FileStack size={18} /><span><strong>多檔合併</strong><small>在瀏覽器內建立 Anchor、預覽並下載單一 HTML</small></span></div>
-          <button type="button" onClick={onClose} aria-label="關閉多檔合併"><X size={18} /></button>
+          <button type="button" onClick={close} aria-label="關閉多檔合併"><X size={18} /></button>
         </header>
 
         <div className="merge-layout">
@@ -215,8 +237,8 @@ export default function MultiDocumentExportDialog({
           </aside>
 
           <div className="merge-preview">
-            {result ? (
-              <iframe title="單頁 HTML 預覽" sandbox="" srcDoc={result.html} />
+            {result && activeResult ? (
+              <iframe title="單頁 HTML 預覽" sandbox="" src={activeResult.previewUrl} />
             ) : (
               <div className="merge-preview-empty"><FileStack size={34} /><strong>單頁預覽</strong><p>選擇文件並通過連結檢查後，預覽會顯示在這裡。</p></div>
             )}
