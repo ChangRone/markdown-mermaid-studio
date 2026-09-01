@@ -4,6 +4,7 @@ export const UI_STORAGE_KEY = "md-mermaid-studio-ui-v4";
 export const MAX_SNAPSHOTS = 20;
 export const MAX_PINNED_SNAPSHOTS = 5;
 export const MAX_SNAPSHOT_TAGS = 5;
+export const MAX_IMPORT_FILES = 50;
 
 export const STARTER_DOCUMENT = `---
 title: 文件處理與簽核流程
@@ -75,6 +76,11 @@ export type StudioWorkspace = {
   version: 5;
   activeId: string;
   documents: StudioDocument[];
+};
+
+export type MarkdownImport = {
+  name: string;
+  content: string;
 };
 
 export type WorkspaceBackup = {
@@ -166,6 +172,22 @@ export function createDocument(
 export function createDefaultWorkspace(now = Date.now()): StudioWorkspace {
   const document = createDocument("document-workflow.md", STARTER_DOCUMENT, now);
   return { version: 5, activeId: document.id, documents: [document] };
+}
+
+export function importMarkdownDocuments(
+  workspace: StudioWorkspace,
+  sources: MarkdownImport[],
+): StudioWorkspace {
+  if (!sources.length) return workspace;
+  if (sources.length > MAX_IMPORT_FILES) {
+    throw new RangeError(`一次最多匯入 ${MAX_IMPORT_FILES} 份文件`);
+  }
+  const imported = sources.map((source) => createDocument(source.name, source.content));
+  return {
+    ...workspace,
+    activeId: imported[0].id,
+    documents: [...imported, ...workspace.documents],
+  };
 }
 
 export function normalizeMarkdownFilename(filename: string) {

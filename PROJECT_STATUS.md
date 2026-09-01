@@ -1,7 +1,7 @@
 # Project Status
 
-更新日期：2026-08-31
-目前版本：v0.6.2
+更新日期：2026-09-01
+目前版本：v0.6.3
 發布分支：`main`
 正式路徑：`/markdown-mermaid-studio/`
 
@@ -9,7 +9,7 @@
 
 | 範圍 | 狀態 | 驗收標準 |
 |---|---|---|
-| Markdown 匯入／輸出 | DONE | 支援常用文字副檔名，輸出單一 `.md` |
+| Markdown 匯入／輸出 | DONE | 一般匯入可一次加入最多 50 份常用文字檔，首檔立即顯示、原文件保留，並輸出單一 `.md` |
 | 即時編輯與預覽 | DONE | 編輯後立即更新 CommonMark／GFM／數學公式／frontmatter |
 | Mermaid 語法與目錄 | DONE | Mermaid 11.17.0 核心 29 種範本全部通過 production parser |
 | Mermaid 長文字 | DONE | Flowchart／Sequence 長文字換行；小數寬度、檔名、底線與中英混合標點具跨瀏覽器回歸測試；State、Mindmap、Kanban、Journey、Architecture、C4 與 Block 長標籤完成正式瀏覽器壓力測試 |

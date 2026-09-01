@@ -6,9 +6,9 @@
 
 **完整功能指南：** [Developer Guide](https://changrone.github.io/markdown-mermaid-studio/developer_guide.html)
 
-## v0.6.2 功能
+## v0.6.3 功能
 
-- `.md`／`.markdown`／`.mdown`／`.mkd`／`.txt` 匯入，統一下載為 UTF-8 `.md`
+- 一般「匯入多份 MD」可一次加入最多 50 份 `.md`／`.markdown`／`.mdown`／`.mkd`／`.txt`，立即顯示第一份並保留原工作區文件；其餘文件可由文件管理區切換
 - 網頁「多檔合併」可一次選取最多 50 份文件、調整順序、驗證跨 MD Anchor、預覽並下載 `all.md` 或獨立 HTML；合併預覽與重新開啟 `all.md` 都能在同一頁正確跳轉
 - 多文件工作區、複製／刪除、每份文件最多 20 份本機版本快照與安全還原
 - 快照自訂名稱、最多 5 個標籤、重新命名、搜尋、刪除與單獨下載 Markdown
@@ -88,7 +88,7 @@ Developer Guide 同步發布到：
 
 系統會把 `other.md#章節` 改成單頁 Anchor；缺少文件、缺少標題 Anchor 或重複檔名時會阻止輸出。外部網址保持不變。本機圖片不會自動上傳或嵌入，畫面會列出警告。
 
-下載的 `all.md` 也可透過 Studio 的「匯入 MD」重新開啟；系統只會還原合併器產生的 `doc-...` 標題 Anchor，其他 raw HTML 仍不執行。頁內 `#Anchor` 留在目前預覽，外部網址則開啟新分頁。
+下載的 `all.md` 也可透過 Studio 的「匯入多份 MD」重新開啟；系統只會還原合併器產生的 `doc-...` 標題 Anchor，其他 raw HTML 仍不執行。頁內 `#Anchor` 留在目前預覽，外部網址則開啟新分頁。
 
 ## 專案內固定五份 Markdown 發布
 

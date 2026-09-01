@@ -39,6 +39,7 @@ import packageInfo from "../package.json";
 import {
   STARTER_DOCUMENT,
   LEGACY_WORKSPACE_STORAGE_KEY,
+  MAX_IMPORT_FILES,
   MAX_PINNED_SNAPSHOTS,
   UI_STORAGE_KEY,
   WORKSPACE_STORAGE_KEY,
@@ -53,6 +54,7 @@ import {
   deleteSnapshot,
   extractMermaidBlocks,
   findSearchMatches,
+  importMarkdownDocuments,
   lineAtOffset,
   mermaidErrorDetails,
   migrateLegacyWorkspace,
@@ -379,19 +381,27 @@ export default function Home() {
     resizeSplit(event.clientX);
   };
 
-  const handleFile = async (file?: File) => {
-    if (!file) return;
-    const content = await file.text();
-    const document = createDocument(normalizeMarkdownFilename(file.name), content);
-    resetDocumentNavigation();
-    setWorkspace((current) => ({
-      ...current,
-      activeId: document.id,
-      documents: [document, ...current.documents],
-    }));
-    setMode("split");
-    notify(`已匯入 ${file.name}，原文件仍保留`);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+  const handleFiles = async (files?: FileList | null) => {
+    const selected = Array.from(files || []);
+    if (!selected.length) return;
+    if (selected.length > MAX_IMPORT_FILES) {
+      notify(`一次最多匯入 ${MAX_IMPORT_FILES} 份文件`);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+    try {
+      const sources = await Promise.all(
+        selected.map(async (file) => ({ name: file.name, content: await file.text() })),
+      );
+      resetDocumentNavigation();
+      setWorkspace((current) => importMarkdownDocuments(current, sources));
+      setMode("split");
+      notify(`已匯入 ${selected.length} 份文件，目前顯示 ${selected[0].name}，原文件仍保留`);
+    } catch {
+      notify("部分文件無法讀取，未匯入任何文件");
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   const downloadContent = (content: string, downloadFilename: string, type: string) => {
@@ -627,9 +637,9 @@ export default function Home() {
             {dark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
           <button className="button secondary" onClick={() => setMergeOpen(true)} aria-label="多檔合併" title="多檔合併"><FileStack size={17} />多檔合併</button>
-          <button className="button secondary" onClick={() => fileInputRef.current?.click()} aria-label="匯入 MD" title="匯入 MD"><FileUp size={17} />匯入 MD</button>
+          <button className="button secondary" onClick={() => fileInputRef.current?.click()} aria-label="匯入多份 MD" title="匯入多份 MD"><FileUp size={17} />匯入多份 MD</button>
           <button className="button primary" onClick={download} aria-label="下載 MD" title="下載 MD"><Download size={17} />下載 MD</button>
-          <input ref={fileInputRef} type="file" accept=".md,.markdown,.mdown,.mkd,.txt,text/markdown,text/plain" hidden onChange={(event) => void handleFile(event.target.files?.[0])} />
+          <input ref={fileInputRef} type="file" accept=".md,.markdown,.mdown,.mkd,.txt,text/markdown,text/plain" multiple hidden onChange={(event) => void handleFiles(event.target.files)} />
         </div>
       </header>
 

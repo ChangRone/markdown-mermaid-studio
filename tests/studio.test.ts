@@ -4,6 +4,7 @@ import { DIAGRAM_TEMPLATES } from "../lib/templates";
 import { getMermaidConfig, prepareMermaidCode } from "../lib/mermaid";
 import {
   MAX_PINNED_SNAPSHOTS,
+  MAX_IMPORT_FILES,
   MAX_SNAPSHOTS,
   addSnapshot,
   applyQuickFix,
@@ -14,6 +15,7 @@ import {
   deleteSnapshot,
   extractMermaidBlocks,
   findSearchMatches,
+  importMarkdownDocuments,
   lineAtOffset,
   normalizeMarkdownFilename,
   normalizeSnapshotTags,
@@ -32,6 +34,59 @@ test("normalizes every accepted text extension to one .md suffix", () => {
   assert.equal(normalizeMarkdownFilename("REPORT.MD"), "REPORT.md");
   assert.equal(normalizeMarkdownFilename("notes.txt"), "notes.md");
   assert.equal(normalizeMarkdownFilename("bad/name?.mkd"), "bad-name-.md");
+});
+
+test("empty Markdown imports leave the workspace unchanged", () => {
+  const workspace = createDefaultWorkspace(1);
+  assert.equal(importMarkdownDocuments(workspace, []), workspace);
+});
+
+test("single and multiple Markdown imports preserve existing documents and select the first file", () => {
+  const workspace = createDefaultWorkspace(1);
+  const single = importMarkdownDocuments(workspace, [{ name: "only.md", content: "# Only" }]);
+  assert.equal(single.documents.length, 2);
+  assert.equal(single.activeId, single.documents[0].id);
+  assert.equal(single.documents[0].content, "# Only");
+  assert.equal(single.documents[1], workspace.documents[0]);
+
+  const imported = importMarkdownDocuments(workspace, [
+    { name: "first.txt", content: "# First" },
+    { name: "second.markdown", content: "# Second" },
+  ]);
+  assert.equal(imported.documents.length, 3);
+  assert.equal(imported.activeId, imported.documents[0].id);
+  assert.deepEqual(
+    imported.documents.slice(0, 2).map(({ filename, content }) => ({ filename, content })),
+    [
+      { filename: "first.md", content: "# First" },
+      { filename: "second.md", content: "# Second" },
+    ],
+  );
+  assert.equal(imported.documents[2], workspace.documents[0]);
+});
+
+test("Markdown imports allow duplicate filenames while keeping distinct document ids", () => {
+  const workspace = createDefaultWorkspace(1);
+  const imported = importMarkdownDocuments(workspace, [
+    { name: "same.md", content: "one" },
+    { name: "same.md", content: "two" },
+  ]);
+  assert.equal(imported.documents[0].filename, "same.md");
+  assert.equal(imported.documents[1].filename, "same.md");
+  assert.notEqual(imported.documents[0].id, imported.documents[1].id);
+});
+
+test("Markdown imports reject selections above the file limit without mutating the workspace", () => {
+  const workspace = createDefaultWorkspace(1);
+  const sources = Array.from({ length: MAX_IMPORT_FILES + 1 }, (_, index) => ({
+    name: `${index}.md`,
+    content: `${index}`,
+  }));
+  assert.throws(
+    () => importMarkdownDocuments(workspace, sources),
+    new RangeError(`一次最多匯入 ${MAX_IMPORT_FILES} 份文件`),
+  );
+  assert.equal(workspace.documents.length, 1);
 });
 
 test("extracts backtick and tilde Mermaid fences with source lines", () => {
