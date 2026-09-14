@@ -11,6 +11,8 @@ import {
 const MARKDOWN_SNIPPETS = [
   { id: "heading", label: "標題結構", detail: "H1–H3 標準階層", code: "\n# 主標題\n\n## 第二層標題\n\n### 第三層標題\n" },
   { id: "emphasis", label: "文字強調", detail: "粗體、斜體與刪除線", code: "\n**粗體**、*斜體*、~~刪除線~~\n" },
+  { id: "ordered-list", label: "編號清單", detail: "有序與巢狀編號", code: "\n1. 第一項\n2. 第二項\n   1. 第二項的子項目\n" },
+  { id: "unordered-list", label: "項目符號清單", detail: "無序與巢狀項目", code: "\n- 第一項\n- 第二項\n  - 第二項的子項目\n" },
   { id: "checklist", label: "核取清單", detail: "GitHub Flavored Markdown", code: "\n- [x] 已完成\n- [ ] 待處理\n" },
   { id: "table", label: "表格", detail: "含欄位對齊", code: "\n| 項目 | 狀態 | 說明 |\n|:---|:---:|---:|\n| 範例 | 完成 | 100 |\n" },
   { id: "link", label: "連結與圖片", detail: "安全連結與替代文字", code: "\n[連結文字](https://example.com)\n\n![圖片替代文字](https://example.com/image.png)\n" },

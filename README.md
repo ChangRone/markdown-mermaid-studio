@@ -6,8 +6,9 @@
 
 **完整功能指南：** [Developer Guide](https://changrone.github.io/markdown-mermaid-studio/developer_guide.html)
 
-## v0.6.3 功能
+## v0.6.4 功能
 
+- Markdown 預覽會顯示編號清單、項目符號與巢狀清單 Marker；核取清單維持只顯示 Checkbox，「完整語法」目錄可直接插入正確範例
 - 一般「匯入多份 MD」可一次加入最多 50 份 `.md`／`.markdown`／`.mdown`／`.mkd`／`.txt`，立即顯示第一份並保留原工作區文件；其餘文件可由文件管理區切換
 - 網頁「多檔合併」可一次選取最多 50 份文件、調整順序、驗證跨 MD Anchor、預覽並下載 `all.md` 或獨立 HTML；合併預覽與重新開啟 `all.md` 都能在同一頁正確跳轉
 - 多文件工作區、複製／刪除、每份文件最多 20 份本機版本快照與安全還原
