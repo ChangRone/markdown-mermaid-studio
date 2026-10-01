@@ -9,11 +9,11 @@ const output = path.join(root, "out");
 const htmlPath = path.join(output, "index.html");
 const guidePath = path.join(output, "developer_guide.html");
 
-test("Pages export contains the v0.6.5 workspace shell", () => {
+test("Pages export contains the v0.6.6 workspace shell", () => {
   assert.ok(existsSync(htmlPath), "out/index.html should exist after next build");
   const html = readFileSync(htmlPath, "utf8");
   assert.match(html, /<title>Markdown Mermaid Studio<\/title>/);
-  assert.match(html, /v(?:<!-- -->)?0\.6\.5/);
+  assert.match(html, /v(?:<!-- -->)?0\.6\.6/);
   assert.match(html, /aria-label="匯入多份 MD"/u);
   assert.match(html, /<input[^>]+type="file"[^>]+multiple=""/u);
   assert.match(html, /多檔合併/);

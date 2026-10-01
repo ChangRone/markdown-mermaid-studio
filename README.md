@@ -6,7 +6,7 @@
 
 **完整功能指南：** [Developer Guide](https://changrone.github.io/markdown-mermaid-studio/developer_guide.html)
 
-## v0.6.5 功能
+## v0.6.6 功能
 
 - Markdown 預覽會顯示編號清單、項目符號與巢狀清單 Marker；核取清單維持只顯示 Checkbox，「完整語法」目錄可直接插入正確範例
 - 一般「匯入多份 MD」可一次加入最多 50 份 `.md`／`.markdown`／`.mdown`／`.mkd`／`.txt`，立即顯示第一份並保留原工作區文件；其餘文件可由文件管理區切換
@@ -18,7 +18,7 @@
 - 完整工作區 JSON 匯出／匯入，包含所有文件、快照與介面偏好
 - 文件管理面板顯示 localStorage 實際占用量與保存風險
 - 編輯、並排、預覽模式；可拖曳或用鍵盤調整欄寬並保存比例
-- Source ↔ Preview 雙向定位：游標與兩側捲動持續追蹤；點選預覽定位來源範圍而不奪走預覽選取，開關可停止追蹤
+- Source ↔ Preview 雙向定位：游標與兩側捲動持續追蹤，包含來源長行自動換行；點選預覽定位來源範圍而不奪走預覽選取，開關可停止追蹤
 - 預覽上方可顯示／隱藏 Source；隱藏後點選預覽不會重新打開 Source
 - 文字搜尋、上一筆／下一筆、區分大小寫、逐筆與全部取代
 - CommonMark、GFM、frontmatter、註腳、數學公式與安全的外部連結預覽；表格儲存格內的 `<br>` 可換行

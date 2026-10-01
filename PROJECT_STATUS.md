@@ -1,7 +1,7 @@
 # Project Status
 
 更新日期：2026-10-01
-目前版本：v0.6.5
+目前版本：v0.6.6
 發布分支：`main`
 正式路徑：`/markdown-mermaid-studio/`
 
@@ -17,7 +17,7 @@
 | Mermaid Block 相容性 | DONE | Mermaid 11.17.0 循環 DOM 序列化已修補，基準與長標籤 Block 圖可實際 render |
 | Mermaid 錯誤定位 | DONE | 顯示實際來源行並能直接跳轉 |
 | Mermaid 輸出 | DONE | 每張圖可輸出 SVG、複製原始碼，或以自包含 data URI 依 `viewBox` 比例輸出 PNG |
-| 雙向定位 | DONE | Source 游標／捲動與 Preview 捲動持續追蹤；預覽點選追蹤來源範圍而不聚焦 Source，開關關閉後停止；Source 可獨立隱藏 |
+| 雙向定位 | DONE | Source 游標／捲動與 Preview 捲動持續追蹤，長行換行依視覺行高度對位；預覽點選追蹤來源範圍而不聚焦 Source，開關關閉後停止；Source 可獨立隱藏 |
 | 多文件與版本 | DONE | 本機多文件、複製、刪除、20 份快照、還原前備份 |
 | 快照管理 | DONE | 名稱、標籤、搜尋、重新命名、釘選、刪除、下載與目前內容比較 |
 | 工作區備份 | DONE | 全部文件、快照與偏好可匯出／匯入 JSON；v4 自動遷移 |

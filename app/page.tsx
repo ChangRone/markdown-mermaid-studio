@@ -35,6 +35,7 @@ import SearchPanel from "@/components/SearchPanel";
 import SnapshotCompareDialog from "@/components/SnapshotCompareDialog";
 import SyntaxCatalog from "@/components/SyntaxCatalog";
 import { getMermaidConfig, prepareMermaidCode } from "@/lib/mermaid";
+import { buildSourceLineTops, lineAtSourceY } from "@/lib/source-position";
 import packageInfo from "../package.json";
 import {
   STARTER_DOCUMENT,
@@ -117,6 +118,7 @@ export default function Home() {
   const scrollLockRef = useRef<"source" | "preview" | null>(null);
   const scrollLockTimerRef = useRef<number | null>(null);
   const trackingPreviewRef = useRef(false);
+  const sourceLayoutRef = useRef<{ markdown: string; width: number; font: string; lineHeight: number; tops: number[] } | null>(null);
 
   const activeDocument = useMemo(
     () =>
@@ -331,11 +333,31 @@ export default function Home() {
     scrollLockTimerRef.current = window.setTimeout(() => { scrollLockRef.current = null; }, 120);
   }, []);
 
-  const sourceTopForLine = useCallback((area: HTMLTextAreaElement, line: number) => {
-    const maximum = Math.max(0, area.scrollHeight - area.clientHeight);
-    const lines = Math.max(1, markdown.split("\n").length - 1);
-    return maximum * Math.max(0, Math.min(1, (line - 1) / lines));
+  const sourceLayout = useCallback((area: HTMLTextAreaElement) => {
+    const style = window.getComputedStyle(area);
+    const width = Math.max(1, area.clientWidth - Number.parseFloat(style.paddingLeft) - Number.parseFloat(style.paddingRight));
+    const font = style.font;
+    const lineHeight = Number.parseFloat(style.lineHeight) || 21;
+    const cached = sourceLayoutRef.current;
+    const paddingTop = Number.parseFloat(style.paddingTop) || 0;
+    const paddingBottom = Number.parseFloat(style.paddingBottom) || 0;
+    if (cached?.markdown === markdown && cached.width === width && cached.font === font && cached.lineHeight === lineHeight) {
+      return { ...cached, paddingTop, paddingBottom };
+    }
+    const context = document.createElement("canvas").getContext("2d");
+    if (context) context.font = font;
+    const tops = buildSourceLineTops(markdown, width, lineHeight,
+      (value) => context?.measureText(value).width ?? value.length * lineHeight * 0.6);
+    sourceLayoutRef.current = { markdown, width, font, lineHeight, tops };
+    return { ...sourceLayoutRef.current, paddingTop, paddingBottom };
   }, [markdown]);
+
+  const sourceTopForLine = useCallback((area: HTMLTextAreaElement, line: number) => {
+    const { tops, paddingTop, paddingBottom } = sourceLayout(area);
+    const maximum = Math.max(0, area.scrollHeight - area.clientHeight);
+    const scale = Math.max(0, area.scrollHeight - paddingTop - paddingBottom) / Math.max(1, tops[tops.length - 1]);
+    return Math.max(0, Math.min(maximum, paddingTop + (tops[Math.min(tops.length - 2, Math.max(0, line - 1))] * scale) - area.clientHeight * 0.24));
+  }, [sourceLayout]);
 
   const trackPreviewSource = useCallback((line: number, endLine?: number, startOffset?: number, endOffset?: number) => {
     if (!syncPosition) return;
@@ -394,8 +416,9 @@ export default function Home() {
     sourceScrollFrameRef.current = window.requestAnimationFrame(() => {
       const area = textareaRef.current;
       if (!area) return;
-      const fraction = area.scrollTop / Math.max(1, area.scrollHeight - area.clientHeight);
-      const line = 1 + Math.round(fraction * (markdown.split("\n").length - 1));
+      const { tops, paddingTop, paddingBottom } = sourceLayout(area);
+      const scale = Math.max(0, area.scrollHeight - paddingTop - paddingBottom) / Math.max(1, tops[tops.length - 1]);
+      const line = lineAtSourceY(tops, (area.scrollTop + area.clientHeight * 0.24 - paddingTop) / Math.max(0.01, scale));
       locatePreview(line);
     });
   };
