@@ -52,6 +52,7 @@ import {
   createDocument,
   createWorkspaceBackup,
   deleteSnapshot,
+  diagramValidationState,
   extractMermaidBlocks,
   findSearchMatches,
   importMarkdownDocuments,
@@ -69,6 +70,7 @@ import {
   toggleSnapshotPinned,
   updateSnapshot,
   type MermaidCheck,
+  type DiagramRenderStatus,
   type QuickFixId,
   type Snapshot,
   type StudioDocument,
@@ -98,7 +100,9 @@ export default function Home() {
   const [uiLoaded, setUiLoaded] = useState(false);
   const [resizing, setResizing] = useState(false);
   const [checks, setChecks] = useState<MermaidCheck[]>([]);
+  const [renderStatuses, setRenderStatuses] = useState<DiagramRenderStatus[]>([]);
   const [checking, setChecking] = useState(false);
+  const [checkedSignature, setCheckedSignature] = useState("");
   const [activeSourceLine, setActiveSourceLine] = useState<number>();
   const [toast, setToast] = useState("");
   const [fixPreview, setFixPreview] = useState<FixPreview>(null);
@@ -108,6 +112,11 @@ export default function Home() {
   const stageRef = useRef<HTMLDivElement>(null);
   const previewPaneRef = useRef<HTMLDivElement>(null);
   const syncFrameRef = useRef<number | null>(null);
+  const sourceScrollFrameRef = useRef<number | null>(null);
+  const previewScrollFrameRef = useRef<number | null>(null);
+  const scrollLockRef = useRef<"source" | "preview" | null>(null);
+  const scrollLockTimerRef = useRef<number | null>(null);
+  const trackingPreviewRef = useRef(false);
 
   const activeDocument = useMemo(
     () =>
@@ -247,6 +256,7 @@ export default function Home() {
     const blocks = extractMermaidBlocks(markdown);
     if (!blocks.length) {
       setChecks([]);
+      setCheckedSignature(`${Number(dark)}:${markdown}`);
       setChecking(false);
       return;
     }
@@ -264,6 +274,7 @@ export default function Home() {
         }
       }
       setChecks(results);
+      setCheckedSignature(`${Number(dark)}:${markdown}`);
     } finally {
       setChecking(false);
     }
@@ -276,6 +287,18 @@ export default function Home() {
 
   const issues = useMemo(() => buildDocumentIssues(markdown, checks), [checks, markdown]);
   const mermaidBlocks = useMemo(() => extractMermaidBlocks(markdown), [markdown]);
+  const validation = diagramValidationState(
+    mermaidBlocks, checks, renderStatuses, dark,
+    checking || checkedSignature !== `${Number(dark)}:${markdown}`,
+  );
+  const reportRenderStatus = useCallback((index: number, code: string, theme: boolean, error: string | null) => {
+    setRenderStatuses((previous) => {
+      const current = previous.find((entry) => entry.index === index && entry.code === code && entry.dark === theme);
+      if (current?.error === error) return previous;
+      return [...previous.filter((entry) => entry.index !== index || entry.code !== code || entry.dark !== theme),
+        { index, code, dark: theme, error }];
+    });
+  }, []);
   const matches = useMemo(
     () => findSearchMatches(markdown, searchQuery, matchCase),
     [markdown, matchCase, searchQuery],
@@ -302,6 +325,35 @@ export default function Home() {
     [markdown, mode],
   );
 
+  const lockProgrammaticScroll = useCallback((target: "source" | "preview") => {
+    scrollLockRef.current = target;
+    if (scrollLockTimerRef.current) window.clearTimeout(scrollLockTimerRef.current);
+    scrollLockTimerRef.current = window.setTimeout(() => { scrollLockRef.current = null; }, 120);
+  }, []);
+
+  const sourceTopForLine = useCallback((area: HTMLTextAreaElement, line: number) => {
+    const maximum = Math.max(0, area.scrollHeight - area.clientHeight);
+    const lines = Math.max(1, markdown.split("\n").length - 1);
+    return maximum * Math.max(0, Math.min(1, (line - 1) / lines));
+  }, [markdown]);
+
+  const trackPreviewSource = useCallback((line: number, endLine?: number, startOffset?: number, endOffset?: number) => {
+    if (!syncPosition) return;
+    setActiveSourceLine(line);
+    if (mode !== "split") return;
+    window.requestAnimationFrame(() => {
+      const area = textareaRef.current;
+      if (!area) return;
+      const start = startOffset ?? offsetAtLine(markdown, line);
+      const end = endOffset ?? (endLine ? Math.min(markdown.length, offsetAtLine(markdown, endLine + 1) - 1) : start);
+      trackingPreviewRef.current = true;
+      area.setSelectionRange(start, Math.max(start, end));
+      window.requestAnimationFrame(() => { trackingPreviewRef.current = false; });
+      lockProgrammaticScroll("source");
+      area.scrollTop = sourceTopForLine(area, line);
+    });
+  }, [lockProgrammaticScroll, markdown, mode, sourceTopForLine, syncPosition]);
+
   const locatePreview = useCallback(
     (line: number) => {
       setActiveSourceLine(line);
@@ -326,20 +378,60 @@ export default function Home() {
         if (!target) return;
         const containerRect = container.getBoundingClientRect();
         const targetRect = target.element.getBoundingClientRect();
+        lockProgrammaticScroll("preview");
         container.scrollTo({
           top: Math.max(0, container.scrollTop + targetRect.top - containerRect.top - container.clientHeight * 0.24),
-          behavior: "smooth",
+          behavior: "instant",
         });
       });
     },
-    [mode, syncPosition],
+    [lockProgrammaticScroll, mode, syncPosition],
   );
+
+  const handleSourceScroll = () => {
+    if (!syncPosition || mode !== "split" || scrollLockRef.current === "source") return;
+    if (sourceScrollFrameRef.current) window.cancelAnimationFrame(sourceScrollFrameRef.current);
+    sourceScrollFrameRef.current = window.requestAnimationFrame(() => {
+      const area = textareaRef.current;
+      if (!area) return;
+      const fraction = area.scrollTop / Math.max(1, area.scrollHeight - area.clientHeight);
+      const line = 1 + Math.round(fraction * (markdown.split("\n").length - 1));
+      locatePreview(line);
+    });
+  };
+
+  const handlePreviewScroll = () => {
+    if (!syncPosition || mode !== "split" || scrollLockRef.current === "preview") return;
+    if (previewScrollFrameRef.current) window.cancelAnimationFrame(previewScrollFrameRef.current);
+    previewScrollFrameRef.current = window.requestAnimationFrame(() => {
+      const container = previewPaneRef.current?.querySelector<HTMLElement>(".markdown-body");
+      const area = textareaRef.current;
+      if (!container || !area) return;
+      const threshold = container.getBoundingClientRect().top + container.clientHeight * 0.24;
+      const positioned = [...container.querySelectorAll<HTMLElement>("[data-source-start]")]
+        .filter((element) => Number(element.dataset.sourceStart) > 0)
+        .sort((a, b) => {
+          const aDistance = Math.abs(a.getBoundingClientRect().top - threshold);
+          const bDistance = Math.abs(b.getBoundingClientRect().top - threshold);
+          return aDistance - bDistance;
+        })[0];
+      const line = Number(positioned?.dataset.sourceStart);
+      if (!line) return;
+      setActiveSourceLine(line);
+      lockProgrammaticScroll("source");
+      area.scrollTop = sourceTopForLine(area, line);
+    });
+  };
 
   useEffect(() => () => {
     if (syncFrameRef.current) window.cancelAnimationFrame(syncFrameRef.current);
+    if (sourceScrollFrameRef.current) window.cancelAnimationFrame(sourceScrollFrameRef.current);
+    if (previewScrollFrameRef.current) window.cancelAnimationFrame(previewScrollFrameRef.current);
+    if (scrollLockTimerRef.current) window.clearTimeout(scrollLockTimerRef.current);
   }, []);
 
   const handleEditorSelection = () => {
+    if (trackingPreviewRef.current || !syncPosition) return;
     const area = textareaRef.current;
     if (!area) return;
     locatePreview(lineAtOffset(markdown, area.selectionStart));
@@ -651,7 +743,7 @@ export default function Home() {
           <span className="saved-label">已儲存於本機</span>
         </div>
         <div className="document-tools">
-          <button type="button" className={`sync-button ${syncPosition ? "active" : ""}`} onClick={() => setSyncPosition((value) => !value)} aria-pressed={syncPosition} title="游標與預覽雙向定位">
+          <button type="button" className={`sync-button ${syncPosition ? "active" : ""}`} onClick={() => { setSyncPosition((value) => !value); setActiveSourceLine(undefined); }} aria-pressed={syncPosition} title="游標與預覽雙向定位">
             <ArrowLeftRight size={15} /><span>{syncPosition ? "雙向定位" : "定位關閉"}</span>
           </button>
           <button type="button" className="utility-button" onClick={() => setSearchOpen((value) => !value)} title="搜尋與取代"><Search size={15} /><span>搜尋</span></button>
@@ -709,6 +801,7 @@ export default function Home() {
               onClick={handleEditorSelection}
               onKeyUp={handleEditorSelection}
               onSelect={handleEditorSelection}
+              onScroll={handleSourceScroll}
               onKeyDown={(event) => {
                 if ((event.ctrlKey || event.metaKey) && event.key.toLocaleLowerCase() === "s") {
                   event.preventDefault();
@@ -766,17 +859,24 @@ export default function Home() {
           <div ref={previewPaneRef} className={`preview-pane ${mode === "editor" ? "hidden-pane" : ""}`}>
             <div className="pane-heading preview-heading">
               <div><span className="eyebrow">PREVIEW</span><strong>即時預覽</strong></div>
+              <button type="button" className="source-visibility-button" aria-pressed={mode === "split"} onClick={() => setMode(mode === "preview" ? "split" : "preview")}>{mode === "preview" ? "顯示 Source" : "隱藏 Source"}</button>
               <div className="validation-state">
-                {checking ? <><span className="pulse-dot" />檢查中</> : checks.some((item) => !item.ok) ? (
-                  <button type="button" onClick={() => jumpSource(checks.find((item) => !item.ok)?.line || 1)}><span className="error-dot" />需要修正</button>
-                ) : <><Check size={15} />語法正常</>}
+                {validation.kind === "checking" ? <><span className="pulse-dot" />檢查中</> : validation.kind === "parse-error" ? (
+                  <button type="button" onClick={() => jumpSource(validation.line)}><span className="error-dot" />需要修正</button>
+                ) : validation.kind === "render-error" ? (
+                  <button type="button" onClick={() => jumpSource(validation.line)}><span className="error-dot" />繪圖失敗</button>
+                ) : validation.kind === "rendering" ? <><span className="pulse-dot" />繪圖中</> : <><Check size={15} />語法與繪圖正常</>}
               </div>
             </div>
             <MarkdownPreview
               markdown={markdown}
               dark={dark}
-              activeLine={activeSourceLine}
+              activeLine={syncPosition ? activeSourceLine : undefined}
+              trackingEnabled={syncPosition}
               onJumpSource={jumpSource}
+              onTrackSource={trackPreviewSource}
+              onRenderStatus={reportRenderStatus}
+              onScroll={handlePreviewScroll}
               onNotify={notify}
             />
           </div>

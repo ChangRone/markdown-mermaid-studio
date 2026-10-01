@@ -92,3 +92,16 @@ test("preview renders ordered, unordered, nested, and task list structures", () 
   assert.equal((html.match(/class="task-list-item"/gu) ?? []).length, 2);
   assert.equal((html.match(/type="checkbox"/gu) ?? []).length, 2);
 });
+
+test("table cells render only standalone br tags as line breaks and retain precise source offsets", () => {
+  const markdown = "| 項目 | 說明 |\n|---|---|\n| A | 第一行<br>第二行<br />第三行 <script>alert(1)</script> |";
+  const html = renderToStaticMarkup(
+    <MarkdownPreview markdown={markdown} dark={false} onJumpSource={() => undefined} onNotify={() => undefined} />,
+  );
+  assert.match(html, /<td[^>]*data-source-offset-start="\d+"[^>]*>第一行<br\/>\s*第二行<br\/>\s*第三行 &lt;script&gt;alert\(1\)&lt;\/script&gt;<\/td>/u);
+  assert.doesNotMatch(html, /<script>|&lt;br&gt;/u);
+  const outside = renderToStaticMarkup(
+    <MarkdownPreview markdown="正文<br>不可執行" dark={false} onJumpSource={() => undefined} onNotify={() => undefined} />,
+  );
+  assert.match(outside, /正文&lt;br&gt;不可執行/u);
+});

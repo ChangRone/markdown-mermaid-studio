@@ -142,6 +142,8 @@ button { color: inherit; }
 .editor-pane { background: var(--panel-soft); }
 .preview-pane { background: var(--panel); }
 .hidden-pane { display: none; }
+.source-visibility-button { margin-left: auto; margin-right: 14px; padding: 5px 9px; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); background: var(--panel); font-size: 12px; cursor: pointer; }
+.source-visibility-button:hover, .source-visibility-button:focus-visible { color: var(--accent); border-color: var(--accent); }
 
 .split-resizer {
   position: relative;

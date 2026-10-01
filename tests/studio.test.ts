@@ -17,6 +17,7 @@ import {
   findSearchMatches,
   importMarkdownDocuments,
   lineAtOffset,
+  diagramValidationState,
   normalizeMarkdownFilename,
   normalizeSnapshotTags,
   offsetAtLine,
@@ -275,4 +276,23 @@ test("every Mermaid catalog example passes the production parser", async () => {
       `invalid Mermaid template: ${template.id}`,
     );
   }
+});
+
+test("Mermaid status waits for rendering and reports a render failure after valid syntax", () => {
+  const blocks = extractMermaidBlocks("```mermaid\nflowchart LR\nA-->B\n```");
+  const checks = [{ index: 0, line: 2, ok: true, message: "語法正確" }];
+  assert.equal(diagramValidationState(blocks, checks, [], false, false).kind, "rendering");
+  const failure = diagramValidationState(blocks, checks, [
+    { index: 0, code: blocks[0].code, dark: false, error: "renderer failed" },
+  ], false, false);
+  assert.deepEqual(failure, { kind: "render-error", line: 2 });
+  assert.equal(diagramValidationState(blocks, checks, [
+    { index: 0, code: blocks[0].code, dark: false, error: null },
+  ], false, false).kind, "ok");
+  assert.equal(diagramValidationState(blocks, checks, [
+    { index: 0, code: "different", dark: false, error: null },
+  ], false, false).kind, "rendering");
+  assert.equal(diagramValidationState(blocks, checks, [
+    { index: 0, code: blocks[0].code, dark: false, error: null },
+  ], true, false).kind, "rendering");
 });

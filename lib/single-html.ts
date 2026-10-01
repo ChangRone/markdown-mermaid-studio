@@ -9,6 +9,7 @@ import remarkRehype from "remark-rehype";
 import remarkStringify from "remark-stringify";
 import { unified } from "unified";
 import { getMermaidConfig, prepareMermaidCode } from "./mermaid";
+import { remarkTableBreaks } from "./table-breaks";
 
 const MARKDOWN_EXTENSION = /\.(?:md|markdown|mdown|mkd|txt)$/iu;
 const MARKDOWN_LINK_EXTENSION = /\.(?:md|markdown|mdown|mkd)$/iu;
@@ -419,6 +420,10 @@ async function prepareRenderAst(
         });
         continue;
       }
+      if (node.type === "tableCell" && child.type === "html" && /^<br\s*\/?\s*>$/iu.test(child.value || "")) {
+        children.push({ type: "break" });
+        continue;
+      }
       if (child.type === "html" && !child.data?.generatedHtml) {
         children.push({ type: "text", value: child.value || "" });
         continue;
@@ -479,6 +484,7 @@ export async function buildSingleHtml(
     .use(remarkGfm)
     .use(remarkMath)
     .use(remarkBreaks)
+    .use(remarkTableBreaks)
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeKatex)
     .use(rehypeLinkPolicy)

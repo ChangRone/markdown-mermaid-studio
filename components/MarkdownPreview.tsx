@@ -28,6 +28,7 @@ import remarkMath from "remark-math";
 import { svgToPng } from "@/lib/mermaid-export";
 import { getMermaidConfig, prepareMermaidCode } from "@/lib/mermaid";
 import { extractMermaidBlocks, parseFrontmatter } from "@/lib/studio";
+import { remarkTableBreaks } from "@/lib/table-breaks";
 
 type MarkdownNode = ExtraProps["node"];
 
@@ -78,7 +79,11 @@ type MarkdownPreviewProps = {
   markdown: string;
   dark: boolean;
   activeLine?: number;
+  trackingEnabled?: boolean;
   onJumpSource: (line: number, endLine?: number) => void;
+  onTrackSource?: (line: number, endLine?: number, startOffset?: number, endOffset?: number) => void;
+  onRenderStatus?: (index: number, code: string, dark: boolean, error: string | null) => void;
+  onScroll?: () => void;
   onNotify: (message: string) => void;
 };
 
@@ -88,6 +93,8 @@ function sourceAttributes(node: MarkdownNode) {
   return {
     "data-source-start": start,
     "data-source-end": end,
+    "data-source-offset-start": node?.position?.start.offset,
+    "data-source-offset-end": node?.position?.end.offset,
   };
 }
 
@@ -107,6 +114,7 @@ function MermaidDiagram({
   startLine,
   endLine,
   onJumpSource,
+  onRenderStatus,
   onNotify,
 }: {
   code: string;
@@ -115,6 +123,7 @@ function MermaidDiagram({
   startLine: number;
   endLine: number;
   onJumpSource: (line: number, endLine?: number) => void;
+  onRenderStatus?: (index: number, code: string, dark: boolean, error: string | null) => void;
   onNotify: (message: string) => void;
 }) {
   const targetRef = useRef<HTMLDivElement>(null);
@@ -137,12 +146,14 @@ function MermaidDiagram({
           targetRef.current.innerHTML = rendered.svg;
           setSvg(rendered.svg);
           setError("");
+          onRenderStatus?.(index, code, dark, null);
         }
       } catch (reason) {
         if (active) {
           const message = reason instanceof Error ? reason.message : String(reason);
           setError(message.split("\n").filter(Boolean).slice(0, 3).join(" "));
           setSvg("");
+          onRenderStatus?.(index, code, dark, message);
         }
       }
     };
@@ -150,7 +161,7 @@ function MermaidDiagram({
     return () => {
       active = false;
     };
-  }, [code, dark, rawId]);
+  }, [code, dark, index, onRenderStatus, rawId]);
 
   const filename = `mermaid-diagram-${index + 1}`;
   if (error) {
@@ -254,8 +265,12 @@ export default function MarkdownPreview({
   markdown,
   dark,
   activeLine,
+  trackingEnabled = true,
   onJumpSource,
+  onTrackSource,
+  onRenderStatus,
   onNotify,
+  onScroll,
 }: MarkdownPreviewProps) {
   const articleRef = useRef<HTMLElement>(null);
   const frontmatter = useMemo(() => parseFrontmatter(markdown), [markdown]);
@@ -296,6 +311,8 @@ export default function MarkdownPreview({
       thead: ({ node, ...props }) => <thead {...positioned(node)} {...props} />,
       tbody: ({ node, ...props }) => <tbody {...positioned(node)} {...props} />,
       tr: ({ node, ...props }) => <tr {...positioned(node)} {...props} />,
+      th: ({ node, ...props }) => <th {...positioned(node)} {...props} />,
+      td: ({ node, ...props }) => <td {...positioned(node)} {...props} />,
       hr: ({ node, ...props }) => <hr {...positioned(node)} {...props} />,
       img: ({ node, alt, ...props }) => <img {...positioned(node)} alt={alt ?? ""} {...props} />,
       pre: ({ children }) => <>{children}</>,
@@ -316,6 +333,7 @@ export default function MarkdownPreview({
               startLine={startLine}
               endLine={endLine}
               onJumpSource={onJumpSource}
+              onRenderStatus={onRenderStatus}
               onNotify={onNotify}
             />
           );
@@ -338,19 +356,31 @@ export default function MarkdownPreview({
         );
       },
     };
-  }, [dark, mermaidBlocks, onJumpSource, onNotify]);
+  }, [dark, mermaidBlocks, onJumpSource, onNotify, onRenderStatus]);
 
   const handlePreviewClick = (event: MouseEvent<HTMLElement>) => {
+    if (!trackingEnabled) return;
+    if (window.getSelection()?.toString()) return;
     const target = event.target as HTMLElement;
     if (target.closest("button, a, input, select, textarea")) return;
     const positioned = target.closest<HTMLElement>("[data-source-start]");
     const line = Number(positioned?.dataset.sourceStart);
     const end = Number(positioned?.dataset.sourceEnd);
-    if (line > 0) onJumpSource(line, end > 0 ? end : undefined);
+    const startOffset = Number(positioned?.dataset.sourceOffsetStart);
+    const endOffset = Number(positioned?.dataset.sourceOffsetEnd);
+    if (line > 0) {
+      if (onTrackSource) onTrackSource(
+        line,
+        end > 0 ? end : undefined,
+        Number.isFinite(startOffset) && positioned?.dataset.sourceOffsetStart ? startOffset : undefined,
+        Number.isFinite(endOffset) && positioned?.dataset.sourceOffsetEnd ? endOffset : undefined,
+      );
+      else onJumpSource(line, end > 0 ? end : undefined);
+    }
   };
 
   return (
-    <article ref={articleRef} className="markdown-body" onClick={handlePreviewClick}>
+    <article ref={articleRef} className="markdown-body" onClick={handlePreviewClick} onScroll={onScroll}>
       {frontmatter.length > 0 && (
         <section
           className="frontmatter-card source-positioned"
@@ -366,7 +396,7 @@ export default function MarkdownPreview({
         </section>
       )}
       <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkFrontmatter, remarkMath, remarkBreaks, remarkGeneratedHeadingAnchors]}
+        remarkPlugins={[remarkGfm, remarkFrontmatter, remarkMath, remarkBreaks, remarkTableBreaks, remarkGeneratedHeadingAnchors]}
         rehypePlugins={[rehypeKatex]}
         components={components}
       >

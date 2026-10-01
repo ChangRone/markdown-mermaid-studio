@@ -125,6 +125,35 @@ export type MermaidCheck = {
   message: string;
 };
 
+export type DiagramRenderStatus = {
+  index: number;
+  code: string;
+  dark: boolean;
+  error: string | null;
+};
+
+export function diagramValidationState(
+  blocks: MermaidBlock[],
+  checks: MermaidCheck[],
+  statuses: DiagramRenderStatus[],
+  dark: boolean,
+  checking: boolean,
+) {
+  if (checking) return { kind: "checking" as const };
+  const parseError = checks.find((check) => !check.ok);
+  if (parseError) return { kind: "parse-error" as const, line: parseError.line };
+  const current = statuses.filter((status) => status.dark === dark && blocks.some((block) =>
+    block.index === status.index && block.code.trim() === status.code.trim(),
+  ));
+  const renderError = current.find((status) => status.error);
+  if (renderError) return {
+    kind: "render-error" as const,
+    line: blocks.find((block) => block.index === renderError.index)?.codeLine || 1,
+  };
+  if (blocks.length > current.length) return { kind: "rendering" as const };
+  return { kind: "ok" as const };
+}
+
 export type QuickFixId =
   | "add-title"
   | "normalize-headings"

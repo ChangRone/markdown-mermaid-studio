@@ -88,6 +88,15 @@ test("builds a standalone HTML page with inline Mermaid and safe link behavior",
   assert.equal(result.summary.mermaidCount, 1);
 });
 
+test("standalone HTML renders table breaks while keeping unrelated HTML inert", async () => {
+  const result = await buildSingleHtml([{
+    name: "table.md",
+    content: "# 表格\n\n| 欄位 |\n|---|\n| 第一行<br>第二行<br/>第三行 <script>alert(1)</script> |",
+  }]);
+  assert.match(result.html, /<td>第一行<br>\s*第二行<br>\s*第三行 &#x3C;script>alert\(1\)&#x3C;\/script><\/td>/u);
+  assert.doesNotMatch(result.html, /<script>alert|&#x3C;br>/u);
+});
+
 test("browser renderer embeds a real Mermaid SVG with complete long CJK labels", async () => {
   const { JSDOM } = await import("jsdom");
   const dom = new JSDOM("<!doctype html><html><body></body></html>", { url: "https://example.test" });
