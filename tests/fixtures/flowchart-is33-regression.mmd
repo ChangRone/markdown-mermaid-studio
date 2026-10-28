@@ -1,0 +1,84 @@
+flowchart TD
+    Start(["Start"])
+    End(["End"])
+
+    subgraph S1["一、申請與文件檢核"]
+        Apply["應用單位<br/>提出 IS33 單申請<br/>與資安相關文件等"]
+        CheckDoc["資料工程科<br/>確認文件<br/>與 Gitea Release 中的<br/>Fortify 掃描結果合規"]
+    end
+
+    subgraph S2["二、測試與結果確認"]
+        Test["應用單位<br/>於測試區執行測試<br/>並完成測試報告"]
+        CeckTestResult["資料工程科<br/>檢核一致性<br/>並確認測試輸出結果"]
+    end
+
+    subgraph S3["三、正式部署"]
+        Deploy["應用單位<br/>依核准內容<br/>部署到正式環境"]
+        CheckSchedule{"常駐型<br/>or<br/>事件型 / 緊急事件型"}
+    end
+
+    subgraph S4["四、執行作業"]
+        Execute["資料工程科<br/>自動檢核部署內容<br/>確認為 Release 版本後<br/>帶起服務<br/>產出執行 log 紀錄"]
+
+        ExecuteBatch["資料工程科<br/>取出核准部署內容的<br/>啟動 shell 與執行時間設定檔<br/>自動掃描並依設定帶起啟動 shell<br/>產出執行 log 紀錄"]
+
+        ExecuteHotfixBatch["資料工程科<br/>提供調整帳號<br/>自動掃描依執行時間設定檔<br/>帶起啟動 shell<br/>產出執行 log 紀錄<br/><br/>應用單位<br/>使用帳號緊急調整<br/>啟動 shell 與執行時間設定檔"]
+    end
+
+    subgraph S5["五、輸出確認與結案"]
+        F{"應用單位<br/>確認收到的輸出資料<br/>狀況是否正確？"}
+        G["應用單位<br/>提供輸出資料樣本<br/>供稽核"]
+        Close["資料工程科<br/>確認稽核檔案正確<br/>IS33 附註描述<br/>結單"]
+    end
+
+    subgraph S6["六、異常與緊急處理"]
+        HotfixNotify["應用單位<br/>發出補單原因通知 Email"]
+        CheckSHotfix{"資料工程科<br/>是否核可？"}
+    end
+
+    Start --> Apply
+    Apply --> CheckDoc
+    CheckDoc --> Test
+    Test --> CeckTestResult
+    CeckTestResult --> Deploy
+    Deploy --> CheckSchedule
+
+    CheckSchedule -->|"常駐型"| Execute
+    CheckSchedule -->|"事件型"| ExecuteBatch
+    CheckSchedule -->|"緊急事件型"| ExecuteHotfixBatch
+
+    Execute --> F
+    ExecuteBatch --> F
+    ExecuteHotfixBatch --> F
+
+    F -->|"輸出資料正確"| G
+    F -->|"輸出資料異常<br/>無緊急修改需求"| Apply
+    F -->|"輸出資料異常<br/>緊急處理"| HotfixNotify
+
+    HotfixNotify --> CheckSHotfix
+    CheckSHotfix -->|"不核可<br/>退回應用單位確認"| F
+    CheckSHotfix -->|"核可<br/>提供緊急修正用帳號"| Deploy
+
+    HotfixNotify -->|"根據調整內容補單"| Apply
+
+    G --> Close
+    Close --> End
+
+    classDef startEnd fill:#f2f2f2,stroke:#333333,stroke-width:1.5px,color:#111111;
+    classDef role fill:#ffffff,stroke:#444444,stroke-width:1.2px,color:#111111;
+    classDef decision fill:#fff4cc,stroke:#9a6700,stroke-width:1.8px,color:#111111;
+    classDef hotfix fill:#ffe6e6,stroke:#b42318,stroke-width:1.8px,color:#111111;
+    classDef close fill:#e8f5e9,stroke:#1b5e20,stroke-width:1.8px,color:#111111;
+
+    class Start,End startEnd;
+    class Apply,CheckDoc,Test,CeckTestResult,Deploy,Execute,ExecuteBatch,ExecuteHotfixBatch,G role;
+    class CheckSchedule,F,CheckSHotfix decision;
+    class HotfixNotify,ExecuteHotfixBatch hotfix;
+    class Close close;
+
+    style S1 fill:#eef6ff,stroke:#9cc7e8,color:#111111
+    style S2 fill:#f2f8ec,stroke:#a8c98a,color:#111111
+    style S3 fill:#fff7e6,stroke:#d9b56f,color:#111111
+    style S4 fill:#f7f2ff,stroke:#bca4e8,color:#111111
+    style S5 fill:#eefaf1,stroke:#8fc99b,color:#111111
+    style S6 fill:#fff0f0,stroke:#d98a8a,color:#111111
