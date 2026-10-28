@@ -25,7 +25,7 @@ import remarkBreaks from "remark-breaks";
 import remarkFrontmatter from "remark-frontmatter";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
-import { renderDiagram, type DiagramEngine } from "@/lib/diagram-renderer";
+import { preserveFlowchartLayout, renderDiagram, type DiagramEngine } from "@/lib/diagram-renderer";
 import { svgToPng } from "@/lib/mermaid-export";
 import { extractMermaidBlocks, parseFrontmatter } from "@/lib/studio";
 import { remarkTableBreaks } from "@/lib/table-breaks";
@@ -137,6 +137,7 @@ function MermaidDiagram({
   const [containerWidth, setContainerWidth] = useState(0);
   const [usedEngine, setUsedEngine] = useState<DiagramEngine>(diagramEngine);
   const [fallbackReason, setFallbackReason] = useState("");
+  const effectiveWidth = preserveFlowchartLayout(code) ? undefined : containerWidth;
 
   useEffect(() => {
     const frame = targetRef.current?.parentElement;
@@ -154,7 +155,7 @@ function MermaidDiagram({
     const draw = async () => {
       try {
         const id = `diagram-${rawId.replace(/[^a-zA-Z0-9]/g, "")}-${Date.now()}`;
-        const rendered = await renderDiagram(code, dark, diagramEngine, id, containerWidth);
+        const rendered = await renderDiagram(code, dark, diagramEngine, id, effectiveWidth);
         if (active && targetRef.current) {
           targetRef.current.innerHTML = rendered.svg;
           setSvg(rendered.svg);
@@ -176,7 +177,7 @@ function MermaidDiagram({
     return () => {
       active = false;
     };
-  }, [code, dark, diagramEngine, containerWidth, index, onRenderStatus, rawId]);
+  }, [code, dark, diagramEngine, effectiveWidth, index, onRenderStatus, rawId]);
 
   const filename = `mermaid-diagram-${index + 1}`;
   if (error) {
