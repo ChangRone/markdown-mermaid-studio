@@ -9,9 +9,9 @@ export type DiagramResult = { svg: string; usedEngine: DiagramEngine; fallbackRe
 // the editor pane makes text and routing hard to read. Keep their natural
 // dimensions and let the existing scroll container provide navigation.
 export function preserveFlowchartLayout(code: string): boolean {
-  if (!/^\\s*(?:flowchart|graph)\\s+(?:TD|TB|BT|LR|RL)\\b/iu.test(code)) return false;
-  const groupCount = (code.match(/^\\s*subgraph\\b/gimu) ?? []).length;
-  const edgeCount = (code.match(/(?:-->|-.->|==>|---)/gu) ?? []).length;
+  if (!/^\s*(?:flowchart|graph)\s+(?:TD|TB|BT|LR|RL)\b/iu.test(code)) return false;
+  const groupCount = (code.match(/^\s*subgraph\b/gimu) ?? []).length;
+  const edgeCount = (code.match(/(?:-->|-\.->|==>|---)/gu) ?? []).length;
   return groupCount >= 3 || edgeCount >= 16;
 }
 
@@ -20,11 +20,11 @@ export function preserveFlowchartLayout(code: string): boolean {
 // invalidates the SVG and can hide edges or turn label backgrounds black.
 // Merge the theme into the existing attribute instead.
 export function themePeleSvg(svg: string, dark: boolean): string {
-  const root = svg.match(/^<svg\\b[^>]*>/u)?.[0];
+  const root = svg.match(/^<svg\b[^>]*>/u)?.[0];
   if (!root || !svg.trimEnd().endsWith("</svg>")) {
     throw new Error("Pele 沒有產生有效 SVG");
   }
-  const styleMatches = [...root.matchAll(/\\sstyle="([^"]*)"/gu)];
+  const styleMatches = [...root.matchAll(/\sstyle="([^"]*)"/gu)];
   if (styleMatches.length !== 1) {
     throw new Error("Pele SVG 根節點的樣式屬性異常");
   }
