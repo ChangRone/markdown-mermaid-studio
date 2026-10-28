@@ -20,7 +20,47 @@ test("Pele dark SVG has self-contained colors for exports", () => {
 });
 
 test("the original Mermaid renderer remains callable explicitly", async () => {
-  const result = await renderDiagram("flowchart LR\nA[One] --> B[Two]", false, "mermaid", "trial-original");
-  assert.equal(result.usedEngine, "mermaid");
-  assert.match(result.svg, /<svg\b/u);
+  const { JSDOM } = await import("jsdom");
+  const dom = new JSDOM("<!doctype html><html><body></body></html>", { url: "https://example.test" });
+  const globals = {
+    window: dom.window,
+    document: dom.window.document,
+    navigator: dom.window.navigator,
+    Element: dom.window.Element,
+    HTMLElement: dom.window.HTMLElement,
+    SVGElement: dom.window.SVGElement,
+    Node: dom.window.Node,
+    CSSStyleSheet: dom.window.CSSStyleSheet,
+  };
+  const previous = new Map<string, PropertyDescriptor | undefined>();
+  for (const [key, value] of Object.entries(globals)) {
+    previous.set(key, Object.getOwnPropertyDescriptor(globalThis, key));
+    Object.defineProperty(globalThis, key, { value, configurable: true });
+  }
+  Object.defineProperty(dom.window.HTMLElement.prototype, "getBoundingClientRect", {
+    configurable: true,
+    value() {
+      const width = Math.min(200, (this.textContent ?? "").length * 8);
+      return { x: 0, y: 0, top: 0, left: 0, right: width, bottom: 24, width, height: 24, toJSON() { return this; } };
+    },
+  });
+  Object.defineProperty(dom.window.SVGElement.prototype, "getComputedTextLength", {
+    configurable: true,
+    value() { return (this.textContent ?? "").length * 8; },
+  });
+  Object.defineProperty(dom.window.SVGElement.prototype, "getBBox", {
+    configurable: true,
+    value() { return { x: 0, y: 0, width: 120, height: 32 }; },
+  });
+  try {
+    const result = await renderDiagram("flowchart LR\nA[One] --> B[Two]", false, "mermaid", "trial-original");
+    assert.equal(result.usedEngine, "mermaid");
+    assert.match(result.svg, /<svg\b/u);
+  } finally {
+    dom.window.close();
+    for (const [key, descriptor] of previous) {
+      if (descriptor) Object.defineProperty(globalThis, key, descriptor);
+      else Reflect.deleteProperty(globalThis, key);
+    }
+  }
 });
