@@ -34,6 +34,7 @@ import MultiDocumentExportDialog from "@/components/MultiDocumentExportDialog";
 import SearchPanel from "@/components/SearchPanel";
 import SnapshotCompareDialog from "@/components/SnapshotCompareDialog";
 import SyntaxCatalog from "@/components/SyntaxCatalog";
+import { DIAGRAM_ENGINE_STORAGE_KEY, DEFAULT_DIAGRAM_ENGINE, type DiagramEngine } from "@/lib/diagram-renderer";
 import { getMermaidConfig, prepareMermaidCode } from "@/lib/mermaid";
 import { buildSourceLineTops, lineAtSourceY } from "@/lib/source-position";
 import packageInfo from "../package.json";
@@ -86,6 +87,7 @@ export default function Home() {
   const [workspace, setWorkspace] = useState(() => createDefaultWorkspace(0));
   const [workspaceLoaded, setWorkspaceLoaded] = useState(false);
   const [dark, setDark] = useState(false);
+  const [diagramEngine, setDiagramEngine] = useState<DiagramEngine>(DEFAULT_DIAGRAM_ENGINE);
   const [mode, setMode] = useState<DisplayMode>("split");
   const [assistantOpen, setAssistantOpen] = useState(true);
   const [documentsOpen, setDocumentsOpen] = useState(false);
@@ -171,6 +173,7 @@ export default function Home() {
         if (legacySplit >= 25 && legacySplit <= 75) preferences.splitPercent = legacySplit;
       }
       setDark(preferences.dark);
+      setDiagramEngine(window.localStorage.getItem(DIAGRAM_ENGINE_STORAGE_KEY) === "mermaid" ? "mermaid" : DEFAULT_DIAGRAM_ENGINE);
       setSplitPercent(preferences.splitPercent);
       setSyncPosition(preferences.syncPosition);
       setMode(preferences.mode);
@@ -200,6 +203,11 @@ export default function Home() {
     );
     document.documentElement.dataset.theme = dark ? "dark" : "light";
   }, [dark, mode, splitPercent, syncPosition, uiLoaded]);
+
+  useEffect(() => {
+    if (!uiLoaded) return;
+    window.localStorage.setItem(DIAGRAM_ENGINE_STORAGE_KEY, diagramEngine);
+  }, [diagramEngine, uiLoaded]);
 
   useEffect(() => {
     if (!toast) return;
@@ -747,7 +755,21 @@ export default function Home() {
           </div>
         </div>
         <div className="top-actions">
-          <span className="version-badge">Mermaid {MERMAID_VERSION}</span>
+          <span className="version-badge">{diagramEngine === "pele" ? "Pele 1.12.0 試用" : `Mermaid ${MERMAID_VERSION}`}</span>
+          <label className="renderer-switch">
+            <span>渲染</span>
+            <select
+              aria-label="圖形渲染引擎"
+              value={diagramEngine}
+              onChange={(event) => {
+                setDiagramEngine(event.target.value as DiagramEngine);
+                setRenderStatuses([]);
+              }}
+            >
+              <option value="pele">Pele（試用）</option>
+              <option value="mermaid">Mermaid（還原）</option>
+            </select>
+          </label>
           <button className="icon-button" onClick={() => setDark((value) => !value)} aria-label={dark ? "切換淺色模式" : "切換深色模式"}>
             {dark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
@@ -894,6 +916,7 @@ export default function Home() {
             <MarkdownPreview
               markdown={markdown}
               dark={dark}
+              diagramEngine={diagramEngine}
               activeLine={syncPosition ? activeSourceLine : undefined}
               trackingEnabled={syncPosition}
               onJumpSource={jumpSource}
@@ -976,6 +999,7 @@ export default function Home() {
       <MultiDocumentExportDialog
         open={mergeOpen}
         dark={dark}
+        diagramEngine={diagramEngine}
         onClose={() => setMergeOpen(false)}
         onNotify={notify}
       />
