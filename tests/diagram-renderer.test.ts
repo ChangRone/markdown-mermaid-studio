@@ -18,9 +18,9 @@ test("Pele SVG theme preserves the original style as one XML attribute", async (
   const svg = themePeleSvg(original, true);
   assert.match(svg, /--pele-bg:#191c20/u);
   assert.match(svg, /--pele-fg:#edf0f3/u);
-  assert.match(svg, /--_bg:var\\(--pele-bg,#fff\\)/u);
-  assert.match(svg, /--_l:var\\(--pele-line,#111\\)/u);
-  assert.equal((svg.match(/\\sstyle="/gu) ?? []).length, 1);
+  assert.ok(svg.includes("--_bg:var(--pele-bg,#fff)"));
+  assert.ok(svg.includes("--_l:var(--pele-line,#111)"));
+  assert.equal(svg.split(' style="').length - 1, 1);
   const document = new JSDOM(svg, { contentType: "image/svg+xml" }).window.document;
   assert.equal(document.documentElement.getAttribute("style")?.includes("--_l:"), true);
   assert.throws(() => themePeleSvg("not an svg", false), /有效 SVG/u);
