@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { DiagramEngine } from "@/lib/diagram-renderer";
 import {
   buildSingleHtml,
   MAX_MERGE_FILES,
@@ -28,6 +29,7 @@ type SelectedSource = MergeSource & { id: string };
 type MultiDocumentExportDialogProps = {
   open: boolean;
   dark: boolean;
+  diagramEngine: DiagramEngine;
   onClose: () => void;
   onNotify: (message: string) => void;
 };
@@ -55,6 +57,7 @@ function formatSize(value: number) {
 export default function MultiDocumentExportDialog({
   open,
   dark,
+  diagramEngine,
   onClose,
   onNotify,
 }: MultiDocumentExportDialogProps) {
@@ -70,7 +73,7 @@ export default function MultiDocumentExportDialog({
     () => sources.length ? prepareSingleHtml(sources) : null,
     [sources],
   );
-  const buildKey = `${dark ? "dark" : "light"}|${title}|${sources.map((source) => source.id).join("|")}`;
+  const buildKey = `${diagramEngine}|${dark ? "dark" : "light"}|${title}|${sources.map((source) => source.id).join("|")}`;
   const activeResult = resultState?.key === buildKey ? resultState : null;
   const result = activeResult?.build ?? null;
   const visibleBuildError = buildError?.key === buildKey ? buildError.message : "";
@@ -137,7 +140,7 @@ export default function MultiDocumentExportDialog({
     setBuilding(true);
     setBuildError(null);
     try {
-      const next = await buildSingleHtml(sources, { title, dark });
+      const next = await buildSingleHtml(sources, { title, dark, diagramEngine });
       const previewUrl = URL.createObjectURL(new Blob([next.html], { type: "text/html;charset=utf-8" }));
       releasePreviewUrl();
       previewUrlRef.current = previewUrl;

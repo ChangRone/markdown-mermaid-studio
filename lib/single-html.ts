@@ -8,7 +8,7 @@ import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
 import remarkStringify from "remark-stringify";
 import { unified } from "unified";
-import { getMermaidConfig, prepareMermaidCode } from "./mermaid";
+import { renderDiagram, type DiagramEngine } from "./diagram-renderer";
 import { remarkTableBreaks } from "./table-breaks";
 
 const MARKDOWN_EXTENSION = /\.(?:md|markdown|mdown|mkd|txt)$/iu;
@@ -68,6 +68,7 @@ export type SingleHtmlBuild = MergePreparation & {
 export type SingleHtmlOptions = {
   title?: string;
   dark?: boolean;
+  diagramEngine?: DiagramEngine;
   renderMermaid?: (code: string, index: number, dark: boolean) => Promise<string>;
 };
 
@@ -390,13 +391,9 @@ export function prepareSingleHtml(sources: MergeSource[]): MergePreparation {
   };
 }
 
-async function defaultMermaidRenderer(code: string, index: number, dark: boolean) {
-  const mermaid = (await import("mermaid")).default;
-  const prepared = prepareMermaidCode(code);
-  mermaid.initialize(getMermaidConfig(dark));
-  await mermaid.parse(prepared);
+async function defaultMermaidRenderer(code: string, index: number, dark: boolean, engine: DiagramEngine = "mermaid") {
   const id = `single-html-mermaid-${index}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  return (await mermaid.render(id, prepared)).svg;
+  return (await renderDiagram(code, dark, engine, id)).svg;
 }
 
 async function prepareRenderAst(
@@ -478,7 +475,7 @@ export async function buildSingleHtml(
   const renderAst = await prepareRenderAst(
     prepared.ast,
     dark,
-    options.renderMermaid || defaultMermaidRenderer,
+    options.renderMermaid || ((code, index, theme) => defaultMermaidRenderer(code, index, theme, options.diagramEngine ?? "mermaid")),
   );
   const processor = unified()
     .use(remarkGfm)
