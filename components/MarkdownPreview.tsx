@@ -25,8 +25,8 @@ import remarkBreaks from "remark-breaks";
 import remarkFrontmatter from "remark-frontmatter";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
+import { renderDiagram, type DiagramEngine } from "@/lib/diagram-renderer";
 import { svgToPng } from "@/lib/mermaid-export";
-import { getMermaidConfig, prepareMermaidCode } from "@/lib/mermaid";
 import { extractMermaidBlocks, parseFrontmatter } from "@/lib/studio";
 import { remarkTableBreaks } from "@/lib/table-breaks";
 
@@ -78,6 +78,7 @@ function remarkGeneratedHeadingAnchors() {
 type MarkdownPreviewProps = {
   markdown: string;
   dark: boolean;
+  diagramEngine?: DiagramEngine;
   activeLine?: number;
   trackingEnabled?: boolean;
   onJumpSource: (line: number, endLine?: number) => void;
@@ -110,6 +111,7 @@ function downloadBlob(blob: Blob, filename: string) {
 function MermaidDiagram({
   code,
   dark,
+  diagramEngine,
   index,
   startLine,
   endLine,
@@ -119,6 +121,7 @@ function MermaidDiagram({
 }: {
   code: string;
   dark: boolean;
+  diagramEngine: DiagramEngine;
   index: number;
   startLine: number;
   endLine: number;
@@ -131,20 +134,32 @@ function MermaidDiagram({
   const [error, setError] = useState("");
   const [svg, setSvg] = useState("");
   const [zoom, setZoom] = useState(1);
+  const [containerWidth, setContainerWidth] = useState(0);
+  const [usedEngine, setUsedEngine] = useState<DiagramEngine>(diagramEngine);
+  const [fallbackReason, setFallbackReason] = useState("");
+
+  useEffect(() => {
+    const frame = targetRef.current?.parentElement;
+    if (!frame || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver((entries) => {
+      const width = Math.max(0, Math.floor(entries[0]?.contentRect.width ?? 0) - 44);
+      setContainerWidth((old) => Math.abs(old - width) >= 8 ? width : old);
+    });
+    observer.observe(frame);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     let active = true;
     const draw = async () => {
       try {
-        const mermaid = (await import("mermaid")).default;
-        const renderCode = prepareMermaidCode(code);
-        mermaid.initialize(getMermaidConfig(dark));
-        await mermaid.parse(renderCode);
         const id = `diagram-${rawId.replace(/[^a-zA-Z0-9]/g, "")}-${Date.now()}`;
-        const rendered = await mermaid.render(id, renderCode);
+        const rendered = await renderDiagram(code, dark, diagramEngine, id, containerWidth);
         if (active && targetRef.current) {
           targetRef.current.innerHTML = rendered.svg;
           setSvg(rendered.svg);
+          setUsedEngine(rendered.usedEngine);
+          setFallbackReason(rendered.fallbackReason ?? "");
           setError("");
           onRenderStatus?.(index, code, dark, null);
         }
@@ -161,7 +176,7 @@ function MermaidDiagram({
     return () => {
       active = false;
     };
-  }, [code, dark, index, onRenderStatus, rawId]);
+  }, [code, dark, diagramEngine, containerWidth, index, onRenderStatus, rawId]);
 
   const filename = `mermaid-diagram-${index + 1}`;
   if (error) {
@@ -188,7 +203,7 @@ function MermaidDiagram({
       data-source-end={endLine}
     >
       <div className="diagram-toolbar">
-        <span>Mermaid #{index + 1}</span>
+        <span title={fallbackReason || undefined}>{usedEngine === "pele" ? "Pele" : fallbackReason ? "Mermaid（備援）" : "Mermaid"} #{index + 1}</span>
         <div>
           <button
             type="button"
@@ -252,6 +267,7 @@ function MermaidDiagram({
       <div className="mermaid-scroll">
         <div
           className="mermaid-canvas"
+          data-engine={usedEngine}
           ref={targetRef}
           aria-label={`Mermaid 圖表 ${index + 1}`}
           style={{ transform: `scale(${zoom})`, transformOrigin: "top left" }}
@@ -264,6 +280,7 @@ function MermaidDiagram({
 export default function MarkdownPreview({
   markdown,
   dark,
+  diagramEngine = "mermaid",
   activeLine,
   trackingEnabled = true,
   onJumpSource,
@@ -329,6 +346,7 @@ export default function MarkdownPreview({
             <MermaidDiagram
               code={code}
               dark={dark}
+              diagramEngine={diagramEngine}
               index={index}
               startLine={startLine}
               endLine={endLine}
@@ -356,7 +374,7 @@ export default function MarkdownPreview({
         );
       },
     };
-  }, [dark, mermaidBlocks, onJumpSource, onNotify, onRenderStatus]);
+  }, [dark, diagramEngine, mermaidBlocks, onJumpSource, onNotify, onRenderStatus]);
 
   const handlePreviewClick = (event: MouseEvent<HTMLElement>) => {
     if (!trackingEnabled) return;
