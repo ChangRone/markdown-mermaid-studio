@@ -12,11 +12,20 @@ test("Pele trial renderer produces a themed SVG", async () => {
   assert.match(result.svg, /--pele-fg:/u);
 });
 
-test("Pele dark SVG has self-contained colors for exports", () => {
-  const svg = themePeleSvg('<svg viewBox="0 0 20 20"></svg>', true);
+test("Pele SVG theme preserves the original style as one XML attribute", async () => {
+  const { JSDOM } = await import("jsdom");
+  const original = '<svg viewBox="0 0 20 20" style="max-width:100%;--_bg:var(--pele-bg,#fff);--_l:var(--pele-line,#111);font-size:16px"><path stroke="var(--_l)" d="M0 0L10 10"/></svg>';
+  const svg = themePeleSvg(original, true);
   assert.match(svg, /--pele-bg:#191c20/u);
   assert.match(svg, /--pele-fg:#edf0f3/u);
+  assert.ok(svg.includes("--_bg:var(--pele-bg,#fff)"));
+  assert.ok(svg.includes("--_l:var(--pele-line,#111)"));
+  assert.equal(svg.split(' style="').length - 1, 1);
+  const document = new JSDOM(svg, { contentType: "image/svg+xml" }).window.document;
+  assert.equal(document.documentElement.getAttribute("style")?.includes("--_l:"), true);
   assert.throws(() => themePeleSvg("not an svg", false), /有效 SVG/u);
+  assert.throws(() => themePeleSvg('<svg viewBox="0 0 20 20"></svg>', false), /樣式屬性異常/u);
+  assert.throws(() => themePeleSvg('<svg style="x:1" style="y:2"></svg>', false), /樣式屬性異常/u);
 });
 
 test("the original Mermaid renderer remains callable explicitly", async () => {

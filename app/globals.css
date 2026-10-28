@@ -390,8 +390,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .mermaid-scroll { min-height: 190px; overflow: auto; padding: 22px; }
 .diagram-figure .mermaid-canvas { min-width: max-content; min-height: 150px; margin: 0; padding: 0; border: 0; background: transparent; transition: transform 120ms ease; }
 .diagram-figure .mermaid-canvas svg { max-width: none; }
-.diagram-figure .mermaid-canvas[data-engine="pele"] { width: 100%; min-width: 0; }
-.diagram-figure .mermaid-canvas[data-engine="pele"] svg { max-width: 100%; height: auto; }
+.diagram-figure .mermaid-canvas[data-engine="pele"] { width: max-content; min-width: 100%; }
+.diagram-figure .mermaid-canvas[data-engine="pele"] svg { max-width: none; height: auto; }
 .renderer-switch { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 10px; }
 .renderer-switch select { max-width: 135px; padding: 5px 6px; border: 1px solid var(--line); border-radius: 6px; color: var(--text); background: var(--panel); font-size: 10px; }
 .diagram-error button { width: fit-content; display: flex; align-items: center; gap: 5px; margin-top: 3px; padding: 5px 8px; border-radius: 6px; color: var(--red); font-size: 9px; }
